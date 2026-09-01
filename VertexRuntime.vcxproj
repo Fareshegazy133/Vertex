@@ -138,7 +138,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Runtime\Source\Runtime.cpp" />
+    <ClInclude Include="Runtime\Source\Core\CoreMinimal.h" />
+    <ClInclude Include="Runtime\Source\Core\DataStructs\Array.h" />
+    <ClInclude Include="Runtime\Source\Core\Memory\ObjectPtr.h" />
+    <ClInclude Include="Runtime\Source\Core\Memory\UniquePtr.h" />
+    <ClInclude Include="Runtime\Source\Core\Types\Numeric.h" />
+    <ClInclude Include="Runtime\Source\Game\Object.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Runtime\Source\Core\DataStructs\Array.cpp" />
+    <ClCompile Include="Runtime\Source\Core\Memory\ObjectPtr.cpp" />
+    <ClCompile Include="Runtime\Source\Core\Memory\UniquePtr.cpp" />
+    <ClCompile Include="Runtime\Source\Game\Object.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
