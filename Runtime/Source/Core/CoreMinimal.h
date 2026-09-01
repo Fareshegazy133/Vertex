@@ -9,10 +9,10 @@
 template<typename ElementType>
 using VArray = VCore::VArray<ElementType>;
 
-template<typename ElementType>
+template<typename ElementType> requires std::derived_from<ElementType, VObject>
 using VObjectPtr = VCore::VObjectPtr<ElementType>;
 
-template<typename ElementType>
+template<typename ElementType> requires std::derived_from<ElementType, VObject>
 using VUniquePtr = VCore::VUniquePtr<ElementType>;
 
 using VCore::MakeUnique;

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Core">
+      <UniqueIdentifier>{2EB4837C-1AEB-840D-C3D7-6A10AFED000F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Application">
+      <UniqueIdentifier>{F1A4822F-DD9D-A181-06D0-8606F227818D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\DataStructs">
+      <UniqueIdentifier>{4F7072B9-3B69-910B-649B-769050F37017}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Memory">
+      <UniqueIdentifier>{D62B9585-42E1-0D7B-CBD5-0752378A047F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Types">
+      <UniqueIdentifier>{526248CE-3E1A-8A1B-A721-637793F8240C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Game">
+      <UniqueIdentifier>{7FA9857C-6BE0-860D-14CD-6C1000E3020F}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Runtime\Source\Core\Application\Application.h">
+      <Filter>Core\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="Runtime\Source\Core\Application\Window.h">
+      <Filter>Core\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="Runtime\Source\Core\CoreMinimal.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Runtime\Source\Core\DataStructs\Array.h">
+      <Filter>Core\DataStructs</Filter>
+    </ClInclude>
+    <ClInclude Include="Runtime\Source\Core\Memory\ObjectPtr.h">
+      <Filter>Core\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="Runtime\Source\Core\Memory\UniquePtr.h">
+      <Filter>Core\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="Runtime\Source\Core\Types\Numeric.h">
+      <Filter>Core\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Runtime\Source\Core\Types\String.h">
+      <Filter>Core\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Runtime\Source\Game\Object.h">
+      <Filter>Game</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Runtime\Source\Core\Application\Application.cpp">
+      <Filter>Core\Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Runtime\Source\Core\Application\Window.cpp">
+      <Filter>Core\Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Runtime\Source\Core\Memory\ObjectPtr.cpp">
+      <Filter>Core\Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="Runtime\Source\Core\Types\String.cpp">
+      <Filter>Core\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Runtime\Source\Game\Object.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

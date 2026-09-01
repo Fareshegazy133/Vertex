@@ -144,18 +144,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Editor\Source\EntryPoint.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Editor\Source\EntryPoint.cpp" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="VertexRuntime.vcxproj">
       <Project>{672E0E14-D3EE-894A-9C29-D3C708A9CE26}</Project>
     </ProjectReference>
     <ProjectReference Include="Vendor\raylib.vcxproj">
       <Project>{8898EA18-743A-15EF-5DF5-284349369C3F}</Project>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="Editor\Source\EntryPoint.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="Editor\Source\EntryPoint.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
