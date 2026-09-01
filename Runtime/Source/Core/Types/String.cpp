@@ -544,12 +544,12 @@ bool operator==(const std::string& LeftString, const VString& RightString) noexc
 	return bSameSize && std::memcmp(LeftString.data(), RightString.Data, RightString.Size) == 0;
 }
 
-bool operator==(const VString& LeftString, const char*& RightString) noexcept
+bool operator==(const VString& LeftString, const char* RightString) noexcept
 {
 	return RightString == LeftString;
 }
 
-bool operator==(const VString& LeftString, const std::string&& RightString) noexcept
+bool operator==(const VString& LeftString, const std::string& RightString) noexcept
 {
 	return RightString == LeftString;
 }
@@ -560,14 +560,14 @@ bool operator==(const VString& LeftString, const VString& RightString) noexcept
 	return std::memcmp(LeftString.Data, RightString.Data, LeftString.Size) == 0;
 }
 
-bool operator!=(const char*& LeftString, const VString& RightString) noexcept
+bool operator!=(const char* LeftString, const VString& RightString) noexcept
 {
 	return !(LeftString == RightString);
 }
 
-bool operator!=(const std::string&& LeftString, const VString& RightString) noexcept
+bool operator!=(const std::string& LeftString, const VString& RightString) noexcept
 {
-	return LeftString != RightString;
+	return !(LeftString == RightString);
 }
 
 bool operator!=(const VString& LeftString, const char*& RightString) noexcept
@@ -575,9 +575,9 @@ bool operator!=(const VString& LeftString, const char*& RightString) noexcept
 	return !(LeftString == RightString);
 }
 
-bool operator!=(const VString& LeftString, const std::string&& RightString) noexcept
+bool operator!=(const VString& LeftString, const std::string& RightString) noexcept
 {
-	return LeftString != RightString;
+	return !(LeftString == RightString);
 }
 
 bool operator!=(const VString& LeftString, const VString& RightString) noexcept
@@ -598,7 +598,7 @@ bool operator<(const std::string& LeftString, const VString& RightString) noexce
 	return Result != 0 ? Result < 0 : LeftString.size() < RightString.Size;
 }
 
-bool operator<(const VString& LeftString, const char*& RightString) noexcept
+bool operator<(const VString& LeftString, const char* RightString) noexcept
 {
 	if (!RightString) return false;
 	return std::strcmp(LeftString.Data, RightString) < 0;
@@ -616,22 +616,22 @@ bool operator<(const VString& LeftString, const VString& RightString) noexcept
 	return Result != 0 ? Result < 0 : LeftString.Size < RightString.Size;
 }
 
-bool operator<=(const char*& LeftString, const VString& RightString) noexcept
+bool operator<=(const char* LeftString, const VString& RightString) noexcept
 {
 	return RightString >= LeftString;
 }
 
-bool operator<=(const std::string&& LeftString, const VString& RightString) noexcept
+bool operator<=(const std::string& LeftString, const VString& RightString) noexcept
 {
 	return RightString >= LeftString;
 }
 
-bool operator<=(const VString& LeftString, const char*& RightString) noexcept
+bool operator<=(const VString& LeftString, const char* RightString) noexcept
 {
 	return RightString >= LeftString;
 }
 
-bool operator<=(const VString& LeftString, const std::string&& RightString) noexcept
+bool operator<=(const VString& LeftString, const std::string& RightString) noexcept
 {
 	return RightString >= LeftString;
 }
@@ -641,22 +641,22 @@ bool operator<=(const VString& LeftString, const VString& RightString) noexcept
 	return RightString >= LeftString;
 }
 
-bool operator>(const char*& LeftString, const VString& RightString) noexcept
+bool operator>(const char* LeftString, const VString& RightString) noexcept
 {
 	return RightString < LeftString;
 }
 
-bool operator>(const std::string&& LeftString, const VString& RightString) noexcept
+bool operator>(const std::string& LeftString, const VString& RightString) noexcept
 {
 	return RightString < LeftString;
 }
 
-bool operator>(const VString& LeftString, const char*& RightString) noexcept
+bool operator>(const VString& LeftString, const char* RightString) noexcept
 {
 	return RightString < LeftString;
 }
 
-bool operator>(const VString& LeftString, const std::string&& RightString) noexcept
+bool operator>(const VString& LeftString, const std::string& RightString) noexcept
 {
 	return RightString < LeftString;
 }
@@ -666,24 +666,24 @@ bool operator>(const VString& LeftString, const VString& RightString) noexcept
 	return RightString < LeftString;
 }
 
-bool operator>=(const char*& LeftString, const VString& RightString) noexcept
+bool operator>=(const char* LeftString, const VString& RightString) noexcept
 {
 	return !(LeftString < RightString);
 }
 
-bool operator>=(const std::string&& LeftString, const VString& RightString) noexcept
-{
-	return LeftString >= RightString;
-}
-
-bool operator>=(const VString& LeftString, const char*& RightString) noexcept
+bool operator>=(const std::string& LeftString, const VString& RightString) noexcept
 {
 	return !(LeftString < RightString);
 }
 
-bool operator>=(const VString& LeftString, const std::string&& RightString) noexcept
+bool operator>=(const VString& LeftString, const char* RightString) noexcept
 {
-	return LeftString >= RightString;
+	return !(LeftString < RightString);
+}
+
+bool operator>=(const VString& LeftString, const std::string& RightString) noexcept
+{
+	return !(LeftString < RightString);
 }
 
 bool operator>=(const VString& LeftString, const VString& RightString) noexcept

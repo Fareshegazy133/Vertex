@@ -2,14 +2,14 @@
 
 #pragma once
 
-#include <string>
 #include "Core/Types/Numeric.h"
+#include "Core/Types/String.h"
 
 namespace VCore
 {
 struct VWindowSpecification
 {
-	std::string WindowName;
+	VString WindowName;
 	
 	uint16 Width = 1280;
 	uint16 Height = 720;
@@ -21,8 +21,11 @@ struct VWindowSpecification
 class VWindow
 {
 public:
-	VWindow();
+	VWindow(const VWindowSpecification& InWindowSpecification = VWindowSpecification());
 	~VWindow();
+	
+	void Construct() const;
+	void Destruct() const;
 
 private:
 	VWindowSpecification WindowSpecification;

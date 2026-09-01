@@ -5,6 +5,7 @@
 #include "DataStructs/Array.h"
 #include "Memory/ObjectPtr.h"
 #include "Memory/UniquePtr.h"
+#include "Types/String.h"
 
 template<typename ElementType>
 using VArray = VCore::VArray<ElementType>;
@@ -16,6 +17,8 @@ template<typename ElementType> requires std::derived_from<ElementType, VObject>
 using VUniquePtr = VCore::VUniquePtr<ElementType>;
 
 using VCore::MakeUnique;
+
+using VString = VCore::VString;
 
 using int8 = VCore::int8;
 using uint8 = VCore::uint8;

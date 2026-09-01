@@ -3,22 +3,31 @@
 #pragma once
 
 #include "Core/Application/Window.h"
+#include "Core/Memory/UniquePtr.h"
 
 namespace VCore
 {
 struct VApplicationSpecification
 {
-	std::string ApplicationName = "Vertex";
+	VString ApplicationName = "Vertex";
 	VWindowSpecification WindowSpecification;
 };
 
 class VApplication
 {
 public:
-	VApplication();
+	VApplication(const VApplicationSpecification& InApplicationSpecification = VApplicationSpecification());
 	~VApplication();
+	
+	void RunApplication();
 
 private:
+	void Update();
+	void Render();
+	
+private:
+	VUniquePtr<VWindow> MainWindow;
+	
 	VApplicationSpecification ApplicationSpecification;
 	
 	bool bIsRunning = false;

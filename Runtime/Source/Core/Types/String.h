@@ -83,7 +83,7 @@ public:
 	
 	friend bool operator==(const char* LeftString, const VString& RightString) noexcept;
 	friend bool operator==(const std::string& LeftString, const VString& RightString) noexcept;
-	friend bool operator==(const VString& LeftString, const char*& RightString) noexcept;
+	friend bool operator==(const VString& LeftString, const char* RightString) noexcept;
 	friend bool operator==(const VString& LeftString, const std::string& RightString) noexcept;
 	friend bool operator==(const VString& LeftString, const VString& RightString) noexcept;
 	
@@ -95,7 +95,7 @@ public:
 	
 	friend bool operator<(const char* LeftString, const VString& RightString) noexcept;
 	friend bool operator<(const std::string& LeftString, const VString& RightString) noexcept;
-	friend bool operator<(const VString& LeftString, const char*& RightString) noexcept;
+	friend bool operator<(const VString& LeftString, const char* RightString) noexcept;
 	friend bool operator<(const VString& LeftString, const std::string& RightString) noexcept;
 	friend bool operator<(const VString& LeftString, const VString& RightString) noexcept;
 	
@@ -113,7 +113,7 @@ public:
 	
 	friend bool operator>=(const char* LeftString, const VString& RightString) noexcept;
 	friend bool operator>=(const std::string& LeftString, const VString& RightString) noexcept;
-	friend bool operator>=(const VString& LeftString, const char*& RightString) noexcept;
+	friend bool operator>=(const VString& LeftString, const char* RightString) noexcept;
 	friend bool operator>=(const VString& LeftString, const std::string& RightString) noexcept;
 	friend bool operator>=(const VString& LeftString, const VString& RightString) noexcept;
 	
