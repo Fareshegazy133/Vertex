@@ -7,8 +7,11 @@
     <Filter Include="Core\Application">
       <UniqueIdentifier>{F1A4822F-DD9D-A181-06D0-8606F227818D}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Core\DataStructs">
-      <UniqueIdentifier>{4F7072B9-3B69-910B-649B-769050F37017}</UniqueIdentifier>
+    <Filter Include="Core\Containers">
+      <UniqueIdentifier>{F3BD5F0A-5F49-CDCE-685A-50C3D46429CF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Layers">
+      <UniqueIdentifier>{2D0BFE82-99C0-7678-22B5-704F8E696D7C}</UniqueIdentifier>
     </Filter>
     <Filter Include="Core\Memory">
       <UniqueIdentifier>{D62B9585-42E1-0D7B-CBD5-0752378A047F}</UniqueIdentifier>
@@ -19,6 +22,9 @@
     <Filter Include="Game">
       <UniqueIdentifier>{7FA9857C-6BE0-860D-14CD-6C1000E3020F}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Input">
+      <UniqueIdentifier>{953A660D-014F-8EBE-CAD0-311E36A48AEF}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Runtime\Source\Core\Application\Application.h">
@@ -27,11 +33,32 @@
     <ClInclude Include="Runtime\Source\Core\Application\Window.h">
       <Filter>Core\Application</Filter>
     </ClInclude>
+    <ClInclude Include="Runtime\Source\Core\Containers\Array.h">
+      <Filter>Core\Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="Runtime\Source\Core\Containers\Hash.h">
+      <Filter>Core\Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="Runtime\Source\Core\Containers\HashTable.h">
+      <Filter>Core\Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="Runtime\Source\Core\Containers\Map.h">
+      <Filter>Core\Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="Runtime\Source\Core\Containers\MapIterator.h">
+      <Filter>Core\Containers</Filter>
+    </ClInclude>
     <ClInclude Include="Runtime\Source\Core\CoreMinimal.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="Runtime\Source\Core\DataStructs\Array.h">
-      <Filter>Core\DataStructs</Filter>
+    <ClInclude Include="Runtime\Source\Core\Layers\AppLayer.h">
+      <Filter>Core\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="Runtime\Source\Core\Layers\Layer.h">
+      <Filter>Core\Layers</Filter>
+    </ClInclude>
+    <ClInclude Include="Runtime\Source\Core\Layers\OverlayLayer.h">
+      <Filter>Core\Layers</Filter>
     </ClInclude>
     <ClInclude Include="Runtime\Source\Core\Memory\ObjectPtr.h">
       <Filter>Core\Memory</Filter>
@@ -42,11 +69,23 @@
     <ClInclude Include="Runtime\Source\Core\Types\Numeric.h">
       <Filter>Core\Types</Filter>
     </ClInclude>
+    <ClInclude Include="Runtime\Source\Core\Types\Pair.h">
+      <Filter>Core\Types</Filter>
+    </ClInclude>
     <ClInclude Include="Runtime\Source\Core\Types\String.h">
       <Filter>Core\Types</Filter>
     </ClInclude>
     <ClInclude Include="Runtime\Source\Game\Object.h">
       <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Runtime\Source\Input\InputAction.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Runtime\Source\Input\InputCodes.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Runtime\Source\Input\InputManager.h">
+      <Filter>Input</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -56,6 +95,15 @@
     <ClCompile Include="Runtime\Source\Core\Application\Window.cpp">
       <Filter>Core\Application</Filter>
     </ClCompile>
+    <ClCompile Include="Runtime\Source\Core\Layers\AppLayer.cpp">
+      <Filter>Core\Layers</Filter>
+    </ClCompile>
+    <ClCompile Include="Runtime\Source\Core\Layers\Layer.cpp">
+      <Filter>Core\Layers</Filter>
+    </ClCompile>
+    <ClCompile Include="Runtime\Source\Core\Layers\OverlayLayer.cpp">
+      <Filter>Core\Layers</Filter>
+    </ClCompile>
     <ClCompile Include="Runtime\Source\Core\Memory\ObjectPtr.cpp">
       <Filter>Core\Memory</Filter>
     </ClCompile>
@@ -64,6 +112,12 @@
     </ClCompile>
     <ClCompile Include="Runtime\Source\Game\Object.cpp">
       <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Runtime\Source\Input\InputAction.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Runtime\Source\Input\InputManager.cpp">
+      <Filter>Input</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

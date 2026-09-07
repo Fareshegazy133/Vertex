@@ -2,21 +2,25 @@
 
 #pragma once
 
-#include "DataStructs/Array.h"
-#include "Memory/ObjectPtr.h"
-#include "Memory/UniquePtr.h"
-#include "Types/String.h"
+#include "Core/Containers/Array.h"
+#include "Core/Memory/ObjectPtr.h"
+#include "Core/Memory/UniquePtr.h"
+#include "Core/Types/Pair.h"
+#include "Core/Types/String.h"
 
-template<typename ElementType>
+template <typename ElementType>
 using VArray = VCore::VArray<ElementType>;
 
-template<typename ElementType> requires std::derived_from<ElementType, VObject>
+template <typename ElementType> requires std::derived_from<ElementType, VObject>
 using VObjectPtr = VCore::VObjectPtr<ElementType>;
 
-template<typename ElementType> requires std::derived_from<ElementType, VObject>
+template <typename ElementType> requires std::derived_from<ElementType, VObject>
 using VUniquePtr = VCore::VUniquePtr<ElementType>;
 
 using VCore::MakeUnique;
+
+template <typename FirstType, typename SecondType>
+using VPair = VCore::VPair<FirstType, SecondType>;
 
 using VString = VCore::VString;
 

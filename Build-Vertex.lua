@@ -58,7 +58,8 @@ project "VertexEditor"
     includedirs
     {
         "Runtime/Source",
-        "Editor/Source"
+        "Editor/Source",
+        "Vendor/raylib/src"
     }
 
     links

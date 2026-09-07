@@ -2,14 +2,14 @@
 
 #pragma once
 
-#include "Core/DataStructs/Array.h"
+#include <Core/Containers/Array.h>
 #include "Core/Memory/UniquePtr.h"
 #include "Core/Types/Numeric.h"
 #include "Game/Object.h"
 
 namespace VCore
 {
-template<typename T>
+template <typename T>
 class VObjectPtr;
 	
 struct VObjectHandle
@@ -42,6 +42,8 @@ public:
 	VObjectPtr<T> CreateObject(Args&&... Arguments);
 
 	void DestroyObject(const VObjectHandle& ObjectHandle);
+	
+	VObjectHandle FindHandle(const VObject* RawPtr) const;
 
 	template<typename T>
 	T* GetObject(const VObjectHandle& ObjectHandle);
@@ -61,7 +63,7 @@ private:
 	VArray<ObjectEntry> Objects;
 };
 
-template<typename T, typename... Args>
+template <typename T, typename... Args>
 VObjectPtr<T> VObjectManager::CreateObject(Args&&... Arguments)
 {
 	static_assert(std::is_base_of_v<VObject, T>, "T must derive from VObject.");
@@ -76,7 +78,7 @@ VObjectPtr<T> VObjectManager::CreateObject(Args&&... Arguments)
 	return VObjectPtr<T>(this, ObjectHandle);
 }
 
-template<typename T>
+template <typename T>
 T* VObjectManager::GetObject(const VObjectHandle& ObjectHandle)
 {
 	static_assert(std::is_base_of_v<VObject, T>, "T must derive from VObject.");
@@ -85,7 +87,7 @@ T* VObjectManager::GetObject(const VObjectHandle& ObjectHandle)
 	return static_cast<T*>(Objects[ObjectHandle.Index].Object.Get());
 }
 
-template<typename T>
+template <typename T>
 const T* VObjectManager::GetObject(const VObjectHandle& ObjectHandle) const
 {
 	static_assert(std::is_base_of_v<VObject, T>, "T must derive from VObject.");
@@ -94,12 +96,16 @@ const T* VObjectManager::GetObject(const VObjectHandle& ObjectHandle) const
 	return static_cast<const T*>(Objects[ObjectHandle.Index].Object.Get());
 }
 	
-template<typename ElementType>
+template <typename T>
 class VObjectPtr
 {
 public:
 	VObjectPtr() = default;
+	VObjectPtr(T* RawPtr);
 	VObjectPtr(VObjectManager* ObjectManager, const VObjectHandle& ObjectHandle);
+	
+	template <typename... Args>
+	VObjectPtr(Args&&... Arguments);
 	
 	template <typename... Args>
 	static VObjectPtr Create(Args&&... Arguments);
@@ -107,12 +113,12 @@ public:
 	void Reset();
 	
 	[[nodiscard]] VObjectHandle GetHandle() const;
-	[[nodiscard]] ElementType* Get() const;
+	[[nodiscard]] T* Get() const;
 	
 	[[nodiscard]] bool IsValid() const;
 	
-	ElementType* operator->() const;
-	ElementType& operator*() const;
+	T* operator->() const;
+	T& operator*() const;
 	
 	bool operator==(std::nullptr_t) const;
 	bool operator==(const VObjectPtr& OtherObjectPtr) const;
@@ -129,82 +135,103 @@ private:
 	
 VObjectManager& GetObjectManager();
 
-template<typename T>
+template <typename T>
+VObjectPtr<T>::VObjectPtr(T* RawPtr)
+{
+	if (!RawPtr) return;
+	
+	VObjectManager* TempObjectManager = &GetObjectManager();
+	const VObjectHandle TempObjectHandle = TempObjectManager->FindHandle(RawPtr);
+
+	if (!TempObjectManager->IsValid(TempObjectHandle)) return;
+
+	ObjectManager = TempObjectManager;
+	ObjectHandle = TempObjectHandle;
+}
+
+template <typename T>
 VObjectPtr<T>::VObjectPtr(VObjectManager* ObjectManager, const VObjectHandle& ObjectHandle)
 	: ObjectManager(ObjectManager), ObjectHandle(ObjectHandle)
 {}
-	
-template<typename T>
-template<typename... Args>
+
+template <typename T>
+template <typename... Args>
+VObjectPtr<T>::VObjectPtr(Args&&... Arguments)
+{
+	*this = Create(std::forward<Args>(Arguments)...);
+}
+
+template <typename T>
+template <typename... Args>
 VObjectPtr<T> VObjectPtr<T>::Create(Args&&... Arguments)
 {
 	return GetObjectManager().CreateObject<T>(std::forward<Args>(Arguments)...);
 }
 
-template<typename T>
+template <typename T>
 void VObjectPtr<T>::Reset()
 {
 	ObjectManager = nullptr;
 	ObjectHandle = VObjectHandle();
 }
 
-template<typename T>
+template <typename T>
 VObjectHandle VObjectPtr<T>::GetHandle() const
 {
 	return ObjectHandle;
 }
 	
-template<typename T>
+template <typename T>
 T* VObjectPtr<T>::Get() const
 {
 	if (!ObjectManager) return nullptr;
 	return ObjectManager->GetObject<T>(ObjectHandle);
 }
 	
-template<typename T>
+template <typename T>
 bool VObjectPtr<T>::IsValid() const
 {
 	if (!ObjectManager) return false;
 	return ObjectManager->IsValid(ObjectHandle);
 }
 
-template<typename T>
+template <typename T>
 T* VObjectPtr<T>::operator->() const
 {
 	return Get();
 }
 
-template<typename T>
+template <typename T>
 T& VObjectPtr<T>::operator*() const
 {
 	return *Get();
 }
 
-template<typename T>
+template <typename T>
 bool VObjectPtr<T>::operator==(std::nullptr_t) const
 {
 	return Get() == nullptr;
 }
 
-template<typename T>
+template <typename T>
 bool VObjectPtr<T>::operator==(const VObjectPtr& OtherObjectPtr) const
 {
 	return Get() == OtherObjectPtr.Get();
 }
 
-template<typename T>
+template <typename T>
 bool VObjectPtr<T>::operator!=(std::nullptr_t) const
 {
 	return Get() != nullptr;
 }
 
-template<typename T>
+template <typename T>
 bool VObjectPtr<T>::operator!=(const VObjectPtr& OtherObjectPtr) const
 {
 	return Get() != OtherObjectPtr.Get();
 }
 
-template<typename T>
+template <typename T>
 VObjectPtr<T>::operator bool() const
 {
 	return IsValid();

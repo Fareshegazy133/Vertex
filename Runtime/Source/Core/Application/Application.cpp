@@ -32,12 +32,23 @@ void VApplication::RunApplication()
 void VApplication::Update()
 {
 	bIsRunning = !WindowShouldClose();
+	
+	for (const auto& Layer : LayerStack)
+	{
+		Layer->Update(GetFrameTime());
+	}
 }
 
 void VApplication::Render()
 {
 	BeginDrawing();
 	ClearBackground(BLACK);
+	
+	for (const auto& Layer : LayerStack)
+	{
+		Layer->Render();
+	}
+	
 	EndDrawing();
 }
 }

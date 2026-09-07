@@ -24,10 +24,12 @@ public:
 	VWindow(const VWindowSpecification& InWindowSpecification = VWindowSpecification());
 	~VWindow();
 	
-	void Construct() const;
-	void Destruct() const;
+	void Construct();
+	void Destruct();
 
 private:
 	VWindowSpecification WindowSpecification;
+	
+	bool bIsConstructed = false;
 };
 }

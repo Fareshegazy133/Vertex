@@ -1,0 +1,46 @@
+﻿// Vertex
+
+#pragma once
+
+#include "InputAction.h"
+#include "Core/Containers/Map.h"
+#include "Core/Memory/ObjectPtr.h"
+#include "Core/Types/Numeric.h"
+#include "Input/InputCodes.h"
+
+namespace VInput
+{
+class VInputManager
+{
+public:
+	static void Initialize();
+	static void ProcessInput(VCore::float32 DeltaTime);
+		
+	static void BindAction(VInputAction* InputAction);
+	static void UnbindAction(const VCore::VString& ActionName);
+	
+	static VCore::uint32 GetMouseX();
+	static VCore::uint32 GetMouseY();
+
+	static VCore::float32 GetMouseDeltaX();
+	static VCore::float32 GetMouseDeltaY();
+
+	static bool IsKeyPressed(const VKeyCode Key);
+	static bool IsKeyInitiallyPressed(const VKeyCode Key);
+	static bool IsKeyReleased(const VKeyCode Key);
+
+	static bool IsMouseButtonPressed(const VMouseButtonCode MouseButton);
+	static bool IsMouseButtonInitiallyPressed(const VMouseButtonCode MouseButton);
+	static bool IsMouseButtonReleased(const VMouseButtonCode MouseButton);
+
+private:
+	static void ProcessKeyboardInputs(const VCore::float32 DeltaTime);
+	static void ProcessMouseInputs(const VCore::float32 DeltaTime);
+		
+	static void ProcessBinding(const VInputAction* InputAction, const VInputBinding& InputBinding, VInputBindingState& InputBindingState, const VCore::float32 DeltaTime);
+	static bool AreModifiersDown(const VInputBinding& InputBinding);
+
+private:
+	static VCore::VMap<VCore::VString, VCore::VObjectPtr<VInputAction>> ActionBindings;
+};	
+}

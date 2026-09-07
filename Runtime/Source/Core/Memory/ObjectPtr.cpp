@@ -32,6 +32,23 @@ void VObjectManager::DestroyObject(const VObjectHandle& ObjectHandle)
 	Entry.Generation++;
 }
 
+VObjectHandle VObjectManager::FindHandle(const VObject* RawPtr) const
+{
+	if (!RawPtr) return VObjectHandle();
+
+	for (int32 Index = 0; Index < Objects.Num(); Index++)
+	{
+		const ObjectEntry& Entry = Objects[Index];
+
+		if (Entry.Object.Get() == RawPtr)
+		{
+			return VObjectHandle(Index, Entry.Generation);
+		}
+	}
+
+	return VObjectHandle();
+}
+
 bool VObjectManager::IsValid(const VObjectHandle& ObjectHandle) const
 {
 	if (!ObjectHandle.IsValid()) return false;

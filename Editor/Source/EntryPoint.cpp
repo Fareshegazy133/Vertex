@@ -3,6 +3,8 @@
 #include "EntryPoint.h"
 
 #include "Core/Application/Application.h"
+#include "Core/Layers/AppLayer.h"
+#include "Core/Layers/OverlayLayer.h"
 
 void VertexStart()
 {
@@ -13,6 +15,8 @@ void VertexStart()
 	ApplicationSpecification.WindowSpecification.Height = 720;
 	
 	VCore::VApplication Application(ApplicationSpecification);
+	Application.PushLayer<VCore::VAppLayer>();
+	Application.PushLayer<VCore::VOverlayLayer>();
 	Application.RunApplication();
 }
 

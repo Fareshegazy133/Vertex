@@ -15,9 +15,10 @@ VWindow::~VWindow()
 	Destruct();
 }
 
-void VWindow::Construct() const
+void VWindow::Construct()
 {
 	uint8 ConfigFlags = 0;
+	bIsConstructed = true;
 
 	if (WindowSpecification.bVSync)
 	{
@@ -33,8 +34,12 @@ void VWindow::Construct() const
 	InitWindow(WindowSpecification.Width, WindowSpecification.Height, WindowSpecification.WindowName);
 }
 
-void VWindow::Destruct() const
+void VWindow::Destruct()
 {
-	CloseWindow();
+	if (bIsConstructed)
+	{
+		CloseWindow();
+		bIsConstructed = false;
+	}
 }
 }

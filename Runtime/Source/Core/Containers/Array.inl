@@ -2,49 +2,11 @@
 
 #pragma once
 
-#include <algorithm>
 #include <cassert>
-#include "Core/Types/Numeric.h"
+#include <utility>
 
 namespace VCore
 {
-template<typename ElementType>
-class VArray
-{
-public:
-	VArray() = default;
-	~VArray();
-	
-	VArray(const VArray& OtherArray);
-	VArray(VArray&& OtherArray) noexcept;
-
-	void Init(const ElementType& Element, int32 NewCapacity);
-	void Reserve(const int32 NewCapacity);
-	
-	void Add(const ElementType& Element);
-	void Add(ElementType&& Element);
-
-	void RemoveAt(int32 ArrayIndex);
-	void Empty();
-	
-	int32 Num() const;
-	int32 Max() const;
-
-	bool IsEmpty() const;
-	bool IsValidIndex(const int32 ArrayIndex) const;
-	
-	VArray& operator=(const VArray& OtherArray);
-	VArray& operator=(VArray&& OtherArray) noexcept;
-	
-	ElementType& operator[](int32 ArrayIndex);
-	const ElementType& operator[](int32 ArrayIndex) const;
-
-private:
-	ElementType* Data = nullptr;
-	int32 Indices = 0;
-	int32 Capacity = 0;
-};
-
 template <typename ElementType>
 VArray<ElementType>::~VArray()
 {
@@ -79,6 +41,7 @@ VArray<ElementType>::VArray(VArray&& OtherArray) noexcept
 template <typename ElementType>
 void VArray<ElementType>::Init(const ElementType& Element, const int32 NewCapacity)
 {
+	Empty();
 	Reserve(NewCapacity);
 	
 	for (int32 ArrayIndex = 0; ArrayIndex < NewCapacity; ArrayIndex++)
@@ -155,6 +118,64 @@ void VArray<ElementType>::Empty()
 	Data = nullptr;
 	Indices = 0;
 	Capacity = 0;
+}
+
+template <typename ElementType>
+template <typename TFunction>
+void VArray<ElementType>::ForEach(TFunction&& Function)
+{
+	for (ElementType* Iterator = Begin(); Iterator != End(); ++Iterator)
+	{
+		Function(*Iterator);
+	}
+}
+
+template <typename ElementType>
+ElementType* VArray<ElementType>::Begin()
+{
+	return Data;
+}
+
+template <typename ElementType>
+ElementType* VArray<ElementType>::begin()
+{
+	return Data;
+}
+
+template <typename ElementType>
+const ElementType* VArray<ElementType>::Begin() const
+{
+	return Data;
+}
+
+template <typename ElementType>
+const ElementType* VArray<ElementType>::begin() const
+{
+	return Data;
+}
+
+template <typename ElementType>
+ElementType* VArray<ElementType>::End()
+{
+	return Data + Indices;
+}
+
+template <typename ElementType>
+ElementType* VArray<ElementType>::end()
+{
+	return Data + Indices;
+}
+
+template <typename ElementType>
+const ElementType* VArray<ElementType>::End() const
+{
+	return Data + Indices;
+}
+
+template <typename ElementType>
+const ElementType* VArray<ElementType>::end() const
+{
+	return Data + Indices;
 }
 
 template <typename ElementType>
