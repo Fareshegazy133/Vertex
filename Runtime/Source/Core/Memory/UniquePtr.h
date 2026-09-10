@@ -7,33 +7,33 @@
 
 namespace VCore
 {
-template <typename ElementType>
+template <typename T>
 class VUniquePtr
 {
 public:
 	VUniquePtr() noexcept = default;
-	VUniquePtr(ElementType* RawPtr) noexcept;
+	VUniquePtr(T* InRawPtr) noexcept;
 	VUniquePtr(const VUniquePtr&) = delete;
 	VUniquePtr(VUniquePtr&& OtherUniquePtr) noexcept;
 	
-	template <typename OtherElementType> requires std::is_convertible_v<OtherElementType*, ElementType*>
-	VUniquePtr(VUniquePtr<OtherElementType>&& OtherUniquePtr) noexcept;
+	template <typename OtherT> requires std::is_convertible_v<OtherT*, T*>
+	VUniquePtr(VUniquePtr<OtherT>&& OtherUniquePtr) noexcept;
 	
 	~VUniquePtr();
 	
-	void Reset(ElementType* NewRawPtr = nullptr);
+	void Reset(T* NewRawPtr = nullptr);
 	void Swap(VUniquePtr& OtherUniquePtr);
 	
-	ElementType* Release();
+	T* Release();
 
-	ElementType* Get() const;
+	T* Get() const;
 	bool IsValid() const;
 	
 	VUniquePtr& operator=(const VUniquePtr&) = delete;
 	VUniquePtr& operator=(VUniquePtr&& OtherUniquePtr) noexcept;
 
-	ElementType& operator*() const;
-	ElementType* operator->() const;
+	T& operator*() const;
+	T* operator->() const;
 
 	explicit operator bool() const;
 
@@ -41,7 +41,7 @@ private:
 	template <typename>
 	friend class VUniquePtr;
 	
-	ElementType* RawPtr = nullptr;
+	T* RawPtr = nullptr;
 };
 }
 

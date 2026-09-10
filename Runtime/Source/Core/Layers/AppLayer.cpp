@@ -9,25 +9,26 @@
 namespace VCore
 {
 VAppLayer::VAppLayer()
-	: TestAction([this]()
-	{
-		DrawRectangle(200, 200, 50, 50, GREEN);
-		std::cout << "TestAction Triggered" << '\n';
-	}, "TestAction")
 {
 	VInput::VInputBinding InputBinding;
+	TestAction = new VInput::VInputAction(&VAppLayer::DrawSquare, this, "TestAction");
 
-	InputBinding.TriggerKey = VInput::VKey::W;
-	InputBinding.InputTrigger = VInput::EVInputTrigger::InitialPress;
-	InputBinding.TriggerTime = 0.25f;
+	InputBinding.TriggerInput = VInput::VKey::W;
+	InputBinding.InputTrigger = VInput::EVInputTrigger::Press;
 
 	TestAction->AddInputBinding(InputBinding);
-	VInput::VInputManager::BindAction(TestAction.Get());
+	VInput::VInputManager::BindAction(TestAction);
 }
 
 void VAppLayer::Update(const float32 DeltaTime)
 {
 	VLayer::Update(DeltaTime);
 	VInput::VInputManager::ProcessInput(DeltaTime);
+}
+
+void VAppLayer::DrawSquare() const
+{
+	DrawRectangle(200, 200, 50, 50, GREEN);
+	std::cout << "TestAction Triggered" << '\n';
 }
 }

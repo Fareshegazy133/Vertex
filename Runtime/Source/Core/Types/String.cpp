@@ -8,6 +8,8 @@
 
 namespace VCore
 {
+const VString VString::EmptyString = VString("");
+
 VString::VString()
 {
 	Allocate(0);

@@ -1,7 +1,5 @@
 ﻿// Vertex
 
-#pragma once
-
 #include <cassert>
 #include <utility>
 

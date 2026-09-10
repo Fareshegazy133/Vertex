@@ -23,6 +23,7 @@ template <typename FirstType, typename SecondType>
 using VPair = VCore::VPair<FirstType, SecondType>;
 
 using VString = VCore::VString;
+using NullPtr = std::nullptr_t;
 
 using int8 = VCore::int8;
 using uint8 = VCore::uint8;

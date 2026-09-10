@@ -23,7 +23,7 @@ void VInputAction::Execute() const
 
 void VInputAction::AddInputBinding(const VInputBinding& InputBinding)
 {
-	if (InputBinding.TriggerKey == VKey::Null) return;
+	if (InputBinding.TriggerInput == VKey::Null) return;
 
 	VCore::VPair<VInputBinding, VInputBindingState> InputBindingPair;
 	InputBindingPair.First = InputBinding;
@@ -38,16 +38,16 @@ void VInputAction::RemoveInputBinding(const VInputBinding& InputBinding)
 	{
 		const VInputBinding& CurrentInputBinding = InputBindings[Index].First;
 
-		if (CurrentInputBinding.TriggerKey != InputBinding.TriggerKey) continue;
+		if (CurrentInputBinding.TriggerInput != InputBinding.TriggerInput) continue;
 		if (CurrentInputBinding.InputTrigger != InputBinding.InputTrigger) continue;
 		if (CurrentInputBinding.TriggerTime != InputBinding.TriggerTime) continue;
-		if (CurrentInputBinding.ModifierKeys.Num() != InputBinding.ModifierKeys.Num()) continue;
+		if (CurrentInputBinding.ModifierInputs.Num() != InputBinding.ModifierInputs.Num()) continue;
 
 		bool bModifiersMatch = true;
 
-		for (VCore::int32 ModifierIndex = 0; ModifierIndex < InputBinding.ModifierKeys.Num(); ModifierIndex++)
+		for (VCore::int32 ModifierIndex = 0; ModifierIndex < InputBinding.ModifierInputs.Num(); ModifierIndex++)
 		{
-			if (CurrentInputBinding.ModifierKeys[ModifierIndex] != InputBinding.ModifierKeys[ModifierIndex])
+			if (CurrentInputBinding.ModifierInputs[ModifierIndex] != InputBinding.ModifierInputs[ModifierIndex])
 			{
 				bModifiersMatch = false;
 				break;
@@ -61,7 +61,7 @@ void VInputAction::RemoveInputBinding(const VInputBinding& InputBinding)
 	}
 }
 
-VCore::VArray<VCore::VPair<VInputBinding, VInputBindingState>>& VInputAction::GetInputBindings()
+VInputAction::VInputBindings& VInputAction::GetInputBindings()
 {
 	return InputBindings;
 }

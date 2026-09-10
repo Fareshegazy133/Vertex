@@ -10,7 +10,8 @@ project "VertexRuntime"
     files
     {
         "Runtime/Source/**.h",
-        "Runtime/Source/**.cpp"
+        "Runtime/Source/**.cpp",
+		"Runtime/Source/**.inl"
     }
 
     includedirs
@@ -52,7 +53,8 @@ project "VertexEditor"
     files
     {
         "Editor/Source/**.h",
-        "Editor/Source/**.cpp"
+        "Editor/Source/**.cpp",
+		"Editor/Source/**.inl"
     }
 
     includedirs

@@ -7,7 +7,7 @@
 
 namespace VInput
 {
-VCore::VMap<VString, VObjectPtr<VInputAction>> VInputManager::ActionBindings;
+VCore::VMap<VString, VCore::VReferencePtr<VInputAction>> VInputManager::ActionBindings;
 	
 void VInputManager::Initialize()
 {
@@ -58,39 +58,81 @@ VCore::float32 VInputManager::GetMouseDeltaY()
 	return ::GetMouseDelta().y;
 }
 
-bool VInputManager::IsKeyPressed(const VKeyCode Key)
+bool VInputManager::IsInputPressed(const VInputCode& Input)
+{
+	switch (Input.Device)
+	{
+		case EVInputDevice::Keyboard:
+			return IsKeyPressed(static_cast<VKeyCode>(Input.Code));
+
+		case EVInputDevice::Mouse:
+			return IsMouseButtonPressed(static_cast<VMouseButtonCode>(Input.Code));
+	}
+
+	return false;
+}
+
+bool VInputManager::IsInputInitiallyPressed(const VInputCode& Input)
+{
+	switch (Input.Device)
+	{
+		case EVInputDevice::Keyboard:
+			return IsKeyInitiallyPressed(static_cast<VKeyCode>(Input.Code));
+
+		case EVInputDevice::Mouse:
+			return IsMouseButtonInitiallyPressed(static_cast<VMouseButtonCode>(Input.Code));
+	}
+
+	return false;
+}
+
+bool VInputManager::IsInputReleased(const VInputCode& Input)
+{
+	switch (Input.Device)
+	{
+		case EVInputDevice::Keyboard:
+			return IsKeyReleased(static_cast<VKeyCode>(Input.Code));
+
+		case EVInputDevice::Mouse:
+			return IsMouseButtonReleased(static_cast<VMouseButtonCode>(Input.Code));
+	}
+
+	return false;
+}
+
+bool VInputManager::IsKeyPressed(const VKeyCode& Key)
 {
 	return ::IsKeyDown(Key);
 }
 
-bool VInputManager::IsKeyInitiallyPressed(const VKeyCode Key)
+bool VInputManager::IsKeyInitiallyPressed(const VKeyCode& Key)
 {
 	return ::IsKeyPressed(Key);
 }
 
-bool VInputManager::IsKeyReleased(const VKeyCode Key)
+bool VInputManager::IsKeyReleased(const VKeyCode& Key)
 {
 	return ::IsKeyReleased(Key);
 }
 
-bool VInputManager::IsMouseButtonPressed(const VMouseButtonCode MouseButton)
+bool VInputManager::IsMouseButtonPressed(const VMouseButtonCode& MouseButton)
 {
 	return ::IsMouseButtonDown(MouseButton);
 }
 
-bool VInputManager::IsMouseButtonInitiallyPressed(const VMouseButtonCode MouseButton)
+bool VInputManager::IsMouseButtonInitiallyPressed(const VMouseButtonCode& MouseButton)
 {
 	return ::IsMouseButtonPressed(MouseButton);
 }
 
-bool VInputManager::IsMouseButtonReleased(const VMouseButtonCode MouseButton)
+bool VInputManager::IsMouseButtonReleased(const VMouseButtonCode& MouseButton)
 {
 	return ::IsMouseButtonReleased(MouseButton);
 }
 
 void VInputManager::ProcessKeyboardInputs(const VCore::float32 DeltaTime)
 {
-	ActionBindings.ForEach([DeltaTime](const VCore::VPair<const VCore::VString, VCore::VObjectPtr<VInputAction>>& Pair)
+	ActionBindings.ForEach([DeltaTime](const VCore::VPair<const VCore::VString, VCore::VReferencePtr<VInputAction>>& Pair)
 		{
 			VInputAction* InputAction = Pair.Second.Get();
 			if (!InputAction) return;
@@ -110,11 +152,12 @@ void VInputManager::ProcessMouseInputs(const VCore::float32 DeltaTime)
 void VInputManager::ProcessBinding(const VInputAction* InputAction, const VInputBinding& InputBinding, VInputBindingState& InputBindingState, const VCore::float32 DeltaTime)
 {
 	if (!InputAction) return;
-	if (InputBinding.TriggerKey == VKey::Null) return;
-
-	const bool bIsPressed = IsKeyPressed(InputBinding.TriggerKey);
-	const bool bIsInitiallyPressed = IsKeyInitiallyPressed(InputBinding.TriggerKey);
-	const bool bIsReleased = IsKeyReleased(InputBinding.TriggerKey);
+	if (InputBinding.TriggerInput == NullInput) return;
+	if (!IsBindingActive(InputBinding)) return;
+	
+	const bool bIsPressed = IsInputPressed(InputBinding.TriggerInput);
+	const bool bIsInitiallyPressed = IsInputInitiallyPressed(InputBinding.TriggerInput);
+	const bool bIsReleased = IsInputReleased(InputBinding.TriggerInput);
 	
 	switch (InputBinding.InputTrigger)
 	{
@@ -210,10 +253,17 @@ void VInputManager::ProcessBinding(const VInputAction* InputAction, const VInput
 		{
 			InputBindingState.HeldTime += DeltaTime;
 
-			if (!InputBindingState.bHoldTriggered && InputBindingState.HeldTime >= InputBinding.TriggerTime)
+			if (InputBindingState.HeldTime >= InputBinding.TriggerTime)
 			{
-				InputBindingState.bHoldTriggered = true;
-				InputAction->Execute();
+				if (InputBinding.bRepeatWhileHeld)
+				{
+					InputAction->Execute();
+				}
+				else if (!InputBindingState.bHoldTriggered)
+				{
+					InputBindingState.bHoldTriggered = true;
+					InputAction->Execute();
+				}
 			}
 		}
 		else
@@ -224,25 +274,22 @@ void VInputManager::ProcessBinding(const VInputAction* InputAction, const VInput
 
 		break;
 	}
-	case EVInputTrigger::Chord:
-	{
-		if (bIsInitiallyPressed && AreModifiersDown(InputBinding))
-		{
-			InputAction->Execute();
-		}
-
-		break;
-	}
 	}
 }
 
 bool VInputManager::AreModifiersDown(const VInputBinding& InputBinding)
 {
-	for (const auto& ModifierKey : InputBinding.ModifierKeys)
+	for (const auto& ModifierInput : InputBinding.ModifierInputs)
 	{
-		if (!IsKeyPressed(ModifierKey)) return false;
+		if (!IsInputPressed(ModifierInput)) return false;
 	}
 
 	return true;
+}
+
+bool VInputManager::IsBindingActive(const VInputBinding& InputBinding)
+{
+	if (InputBinding.ModifierInputs.IsEmpty()) return true;
+	return AreModifiersDown(InputBinding);
 }
 }

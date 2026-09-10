@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Core/Layers/Layer.h"
-#include "Core/Memory/ObjectPtr.h"
+#include "Core/Memory/ReferencePtr.h"
 #include "Input/InputAction.h"
 
 namespace VCore
@@ -15,8 +15,9 @@ public:
 	~VAppLayer() override = default;
 
 	void Update(const float32 DeltaTime) override;
+	void DrawSquare() const;
 	
 private:
-	VObjectPtr<VInput::VInputAction> TestAction;
+	VReferencePtr<VInput::VInputAction> TestAction;
 };
 }

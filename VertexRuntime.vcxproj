@@ -141,18 +141,28 @@
     <ClInclude Include="Runtime\Source\Core\Application\Application.h" />
     <ClInclude Include="Runtime\Source\Core\Application\Window.h" />
     <ClInclude Include="Runtime\Source\Core\Containers\Array.h" />
+    <ClInclude Include="Runtime\Source\Core\Containers\Array.inl" />
     <ClInclude Include="Runtime\Source\Core\Containers\Hash.h" />
+    <ClInclude Include="Runtime\Source\Core\Containers\Hash.inl" />
     <ClInclude Include="Runtime\Source\Core\Containers\HashTable.h" />
+    <ClInclude Include="Runtime\Source\Core\Containers\HashTable.inl" />
     <ClInclude Include="Runtime\Source\Core\Containers\Map.h" />
+    <ClInclude Include="Runtime\Source\Core\Containers\Map.inl" />
     <ClInclude Include="Runtime\Source\Core\Containers\MapIterator.h" />
+    <ClInclude Include="Runtime\Source\Core\Containers\MapIterator.inl" />
     <ClInclude Include="Runtime\Source\Core\CoreMinimal.h" />
     <ClInclude Include="Runtime\Source\Core\Layers\AppLayer.h" />
     <ClInclude Include="Runtime\Source\Core\Layers\Layer.h" />
     <ClInclude Include="Runtime\Source\Core\Layers\OverlayLayer.h" />
     <ClInclude Include="Runtime\Source\Core\Memory\ObjectPtr.h" />
+    <ClInclude Include="Runtime\Source\Core\Memory\ObjectPtr.inl" />
+    <ClInclude Include="Runtime\Source\Core\Memory\ReferencePtr.h" />
+    <ClInclude Include="Runtime\Source\Core\Memory\ReferencePtr.inl" />
     <ClInclude Include="Runtime\Source\Core\Memory\UniquePtr.h" />
+    <ClInclude Include="Runtime\Source\Core\Memory\UniquePtr.inl" />
     <ClInclude Include="Runtime\Source\Core\Types\Numeric.h" />
     <ClInclude Include="Runtime\Source\Core\Types\Pair.h" />
+    <ClInclude Include="Runtime\Source\Core\Types\Pair.inl" />
     <ClInclude Include="Runtime\Source\Core\Types\String.h" />
     <ClInclude Include="Runtime\Source\Game\Object.h" />
     <ClInclude Include="Runtime\Source\Input\InputAction.h" />
@@ -169,6 +179,7 @@
     <ClCompile Include="Runtime\Source\Core\Types\String.cpp" />
     <ClCompile Include="Runtime\Source\Game\Object.cpp" />
     <ClCompile Include="Runtime\Source\Input\InputAction.cpp" />
+    <ClCompile Include="Runtime\Source\Input\InputCodes.cpp" />
     <ClCompile Include="Runtime\Source\Input\InputManager.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

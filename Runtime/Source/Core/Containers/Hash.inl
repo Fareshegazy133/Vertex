@@ -1,7 +1,5 @@
 ﻿// Vertex
 
-#pragma once
-
 namespace VCore
 {
 namespace VHashFunctions

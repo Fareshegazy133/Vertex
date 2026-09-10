@@ -125,6 +125,9 @@ public:
 	
 	friend std::ostream& operator<<(std::ostream& Stream, const VString& String);
 
+public:
+	static const VString EmptyString;
+	
 private:
 	void Allocate(const uint32 NewCapacity);
 	void Reallocate(const uint32 NewCapacity);

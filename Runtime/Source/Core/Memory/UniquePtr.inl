@@ -4,24 +4,25 @@
 
 namespace VCore
 {
-template <typename ElementType, typename... Args>
-VUniquePtr<ElementType> MakeUnique(Args&&... Arguments)
+template <typename T, typename... Args>
+VUniquePtr<T> MakeUnique(Args&&... Arguments)
 {
-	return VUniquePtr(new ElementType(std::forward<Args>(Arguments)...));
+	return VUniquePtr(new T(std::forward<Args>(Arguments)...));
 }
 
 template <typename T>
-VUniquePtr<T>::VUniquePtr(T* RawPtr) noexcept : RawPtr(RawPtr)
+VUniquePtr<T>::VUniquePtr(T* InRawPtr) noexcept
+	: RawPtr(InRawPtr)
 {}
 
-template <typename ElementType>
-VUniquePtr<ElementType>::~VUniquePtr()
+template <typename T>
+VUniquePtr<T>::~VUniquePtr()
 {
 	delete RawPtr;
 }
 
-template <typename ElementType>
-void VUniquePtr<ElementType>::Reset(ElementType* NewRawPtr)
+template <typename T>
+void VUniquePtr<T>::Reset(T* NewRawPtr)
 {
 	if (RawPtr != NewRawPtr)
 	{
@@ -30,46 +31,46 @@ void VUniquePtr<ElementType>::Reset(ElementType* NewRawPtr)
 	}
 }
 
-template <typename ElementType>
-void VUniquePtr<ElementType>::Swap(VUniquePtr& OtherUniquePtr)
+template <typename T>
+void VUniquePtr<T>::Swap(VUniquePtr& OtherUniquePtr)
 {
 	std::swap(RawPtr, OtherUniquePtr.RawPtr);
 }
 
-template <typename ElementType>
-ElementType* VUniquePtr<ElementType>::Release()
+template <typename T>
+T* VUniquePtr<T>::Release()
 {
-	ElementType* ReleasedPtr = RawPtr;
+	T* ReleasedPtr = RawPtr;
 	RawPtr = nullptr;
 	return ReleasedPtr;
 }
 
-template <typename ElementType>
-ElementType* VUniquePtr<ElementType>::Get() const
+template <typename T>
+T* VUniquePtr<T>::Get() const
 {
 	return RawPtr;
 }
 
-template <typename ElementType>
-bool VUniquePtr<ElementType>::IsValid() const
+template <typename T>
+bool VUniquePtr<T>::IsValid() const
 {
 	return RawPtr != nullptr;
 }
 
-template <typename ElementType>
-VUniquePtr<ElementType>::VUniquePtr(VUniquePtr&& OtherUniquePtr) noexcept : RawPtr(OtherUniquePtr.RawPtr)
+template <typename T>
+VUniquePtr<T>::VUniquePtr(VUniquePtr&& OtherUniquePtr) noexcept : RawPtr(OtherUniquePtr.RawPtr)
 {
 	OtherUniquePtr.RawPtr = nullptr;
 }
 
-template <typename ElementType>
-template <typename OtherElementType> requires std::is_convertible_v<OtherElementType*, ElementType*>
-VUniquePtr<ElementType>::VUniquePtr(VUniquePtr<OtherElementType>&& OtherUniquePtr) noexcept
+template <typename T>
+template <typename OtherT> requires std::is_convertible_v<OtherT*, T*>
+VUniquePtr<T>::VUniquePtr(VUniquePtr<OtherT>&& OtherUniquePtr) noexcept
 	: RawPtr(OtherUniquePtr.Release())
 {}
 
-template <typename ElementType>
-VUniquePtr<ElementType>& VUniquePtr<ElementType>::operator=(VUniquePtr&& OtherUniquePtr) noexcept
+template <typename T>
+VUniquePtr<T>& VUniquePtr<T>::operator=(VUniquePtr&& OtherUniquePtr) noexcept
 {
 	if (this != &OtherUniquePtr)
 	{
@@ -81,20 +82,20 @@ VUniquePtr<ElementType>& VUniquePtr<ElementType>::operator=(VUniquePtr&& OtherUn
 	return *this;
 }
 
-template <typename ElementType>
-ElementType& VUniquePtr<ElementType>::operator*() const
+template <typename T>
+T& VUniquePtr<T>::operator*() const
 {
 	return *RawPtr;
 }
 
-template <typename ElementType>
-ElementType* VUniquePtr<ElementType>::operator->() const
+template <typename T>
+T* VUniquePtr<T>::operator->() const
 {
 	return RawPtr;
 }
 
-template <typename ElementType>
-VUniquePtr<ElementType>::operator bool() const
+template <typename T>
+VUniquePtr<T>::operator bool() const
 {
 	return RawPtr != nullptr;
 }

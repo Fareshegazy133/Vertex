@@ -36,16 +36,31 @@
     <ClInclude Include="Runtime\Source\Core\Containers\Array.h">
       <Filter>Core\Containers</Filter>
     </ClInclude>
+    <ClInclude Include="Runtime\Source\Core\Containers\Array.inl">
+      <Filter>Core\Containers</Filter>
+    </ClInclude>
     <ClInclude Include="Runtime\Source\Core\Containers\Hash.h">
+      <Filter>Core\Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="Runtime\Source\Core\Containers\Hash.inl">
       <Filter>Core\Containers</Filter>
     </ClInclude>
     <ClInclude Include="Runtime\Source\Core\Containers\HashTable.h">
       <Filter>Core\Containers</Filter>
     </ClInclude>
+    <ClInclude Include="Runtime\Source\Core\Containers\HashTable.inl">
+      <Filter>Core\Containers</Filter>
+    </ClInclude>
     <ClInclude Include="Runtime\Source\Core\Containers\Map.h">
       <Filter>Core\Containers</Filter>
     </ClInclude>
+    <ClInclude Include="Runtime\Source\Core\Containers\Map.inl">
+      <Filter>Core\Containers</Filter>
+    </ClInclude>
     <ClInclude Include="Runtime\Source\Core\Containers\MapIterator.h">
+      <Filter>Core\Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="Runtime\Source\Core\Containers\MapIterator.inl">
       <Filter>Core\Containers</Filter>
     </ClInclude>
     <ClInclude Include="Runtime\Source\Core\CoreMinimal.h">
@@ -63,13 +78,22 @@
     <ClInclude Include="Runtime\Source\Core\Memory\ObjectPtr.h">
       <Filter>Core\Memory</Filter>
     </ClInclude>
+    <ClInclude Include="Runtime\Source\Core\Memory\ObjectPtr.inl">
+      <Filter>Core\Memory</Filter>
+    </ClInclude>
     <ClInclude Include="Runtime\Source\Core\Memory\UniquePtr.h">
+      <Filter>Core\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="Runtime\Source\Core\Memory\UniquePtr.inl">
       <Filter>Core\Memory</Filter>
     </ClInclude>
     <ClInclude Include="Runtime\Source\Core\Types\Numeric.h">
       <Filter>Core\Types</Filter>
     </ClInclude>
     <ClInclude Include="Runtime\Source\Core\Types\Pair.h">
+      <Filter>Core\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Runtime\Source\Core\Types\Pair.inl">
       <Filter>Core\Types</Filter>
     </ClInclude>
     <ClInclude Include="Runtime\Source\Core\Types\String.h">
@@ -114,6 +138,9 @@
       <Filter>Game</Filter>
     </ClCompile>
     <ClCompile Include="Runtime\Source\Input\InputAction.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Runtime\Source\Input\InputCodes.cpp">
       <Filter>Input</Filter>
     </ClCompile>
     <ClCompile Include="Runtime\Source\Input\InputManager.cpp">

@@ -1,7 +1,5 @@
 ﻿// Vertex
 
-#pragma once
-
 #include <utility>
 
 namespace VCore

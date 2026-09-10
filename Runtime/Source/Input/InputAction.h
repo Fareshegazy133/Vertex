@@ -7,7 +7,6 @@
 #include "Core/Containers/Array.h"
 #include "Core/Types/Pair.h"
 #include "Core/Types/String.h"
-#include "Game/Object.h"
 
 namespace VInput
 {
@@ -30,20 +29,28 @@ enum class EVInputTrigger : VCore::uint8
 
 	/** Triggers when the input remains active for the configured hold duration. */
 	Hold,
+};
 
-	/** Triggers when the configured combination of inputs is active simultaneously. */
-	Chord
+enum class EVInputValue : VCore::uint8
+{
+	Bool,
+	Axis1D,
+	Axis2D
 };
 
 struct VInputBinding
 {
-	VCore::VArray<VKeyCode> ModifierKeys;
-	VKeyCode TriggerKey = VKey::Null;
+	VCore::VArray<VInputCode> ModifierInputs;
+	VInputCode TriggerInput = NullInput;
 	
 	EVInputTrigger InputTrigger = EVInputTrigger::Press;
+	EVInputValue InputValue = EVInputValue::Bool;
+	
 	VCore::float32 TriggerTime = 0.f;
+	
+	bool bRepeatWhileHeld = false;
 };
-
+ 
 struct VInputBindingState
 {
 	VCore::uint8 ClickCount = 0;
@@ -52,27 +59,45 @@ struct VInputBindingState
 	bool bHoldTriggered  = false;
 };
 
-class VInputAction : public VObject
+class VInputAction
 {
 public:
+	using VInputBindings = VCore::VArray<VCore::VPair<VInputBinding, VInputBindingState>>;
 	using VInputCallback = std::function<void()>;
 	
-	VInputAction() = default;
+	explicit VInputAction() = default;
 	explicit VInputAction(const VInputCallback& InInputCallback, const VCore::VString& InActionName);
-	~VInputAction() override;
+	
+	template<typename ObjectT>
+	VInputAction(void(ObjectT::*Function)() const, ObjectT* Object, const VCore::VString& InActionName);
+
+	template<typename TObject>
+	VInputAction(void(TObject::*Function)(), TObject* Object, const VCore::VString& InActionName);
+	
+	~VInputAction();
 	
 	void Execute() const;
 
 	void AddInputBinding(const VInputBinding& InputBinding);
 	void RemoveInputBinding(const VInputBinding& InputBinding);
 
-	VCore::VArray<VCore::VPair<VInputBinding, VInputBindingState>>& GetInputBindings();
+	VInputBindings& GetInputBindings();
 	VCore::VString GetActionName() const;
 	
 private:
-	VCore::VArray<VCore::VPair<VInputBinding, VInputBindingState>> InputBindings;
+	VInputBindings InputBindings;
 	VInputCallback InputCallback;
 	
-	VCore::VString ActionName;
+	VCore::VString ActionName = VCore::VString::EmptyString;
 };
+
+template <typename TObject>
+VInputAction::VInputAction(void(TObject::* Function)() const, TObject* Object, const VCore::VString& InActionName)
+	: InputCallback([Object, Function]() { (Object->*Function)(); }), ActionName(InActionName)
+{}
+
+template <typename TObject>
+VInputAction::VInputAction(void(TObject::* Function)(), TObject* Object, const VCore::VString& InActionName)
+	: InputCallback([Object, Function]() { (Object->*Function)(); }), ActionName(InActionName)
+{}
 }

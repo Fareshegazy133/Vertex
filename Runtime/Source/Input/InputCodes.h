@@ -3,11 +3,18 @@
 #pragma once
 
 #include "raylib.h"
+#include "Core/Types/Numeric.h"
 
 namespace VInput
 {
 using VKeyCode = KeyboardKey;
 using VMouseButtonCode = MouseButton;
+
+enum class EVInputDevice : VCore::uint8
+{
+	Keyboard,
+	Mouse
+};
 
 struct VKey
 {
@@ -131,4 +138,19 @@ struct VMouseButton
 	static constexpr VMouseButtonCode Forward = MOUSE_BUTTON_FORWARD;
 	static constexpr VMouseButtonCode Back = MOUSE_BUTTON_BACK;
 };
+
+struct VInputCode
+{
+	constexpr VInputCode();
+	VInputCode(const VKeyCode Key);
+	VInputCode(const VMouseButtonCode MouseButton);
+	
+	bool operator==(const VInputCode& OtherInputCode) const;
+	bool operator!=(const VInputCode& OtherInputCode) const;
+	
+	EVInputDevice Device;
+	VCore::uint16 Code = 0;
+};
+
+inline static const VInputCode NullInput = VInputCode();
 }
