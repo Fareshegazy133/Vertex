@@ -19,8 +19,8 @@ public:
 	static void BindAction(VInputAction* InputAction);
 	static void UnbindAction(const VCore::VString& ActionName);
 	
-	static VCore::uint32 GetMouseX();
-	static VCore::uint32 GetMouseY();
+	static VCore::float32 GetMouseX();
+	static VCore::float32 GetMouseY();
 
 	static VCore::float32 GetMouseDeltaX();
 	static VCore::float32 GetMouseDeltaY();

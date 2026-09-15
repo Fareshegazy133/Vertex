@@ -3,14 +3,16 @@
 #include "Core/Application/Application.h"
 
 #include "raylib.h"
+#include "Render/RenderCore/Renderer.h"
 
 namespace VCore
 {
 VApplication::VApplication(const VApplicationSpecification& InApplicationSpecification)
-	: ApplicationSpecification(InApplicationSpecification)
+	: Renderer(&RHI), ApplicationSpecification(InApplicationSpecification)
 {
 	MainWindow = MakeUnique<VWindow>(ApplicationSpecification.WindowSpecification);
 	MainWindow->Construct();
+	World.SpawnActor<VActor>();
 }
 
 VApplication::~VApplication()
@@ -35,20 +37,23 @@ void VApplication::Update()
 	
 	for (const auto& Layer : LayerStack)
 	{
-		Layer->Update(GetFrameTime());
+		//Layer->Update(GetFrameTime());
 	}
+	
+	World.Update(GetFrameTime());
 }
 
 void VApplication::Render()
 {
-	BeginDrawing();
-	ClearBackground(BLACK);
+	World.BuildRenderScene(RenderScene);
+	Renderer.BeginFrame();
 	
 	for (const auto& Layer : LayerStack)
 	{
-		Layer->Render();
+		//Layer->Render(Renderer);
 	}
 	
-	EndDrawing();
+	Renderer.Render(RenderScene, RenderView);
+	Renderer.EndFrame();
 }
 }

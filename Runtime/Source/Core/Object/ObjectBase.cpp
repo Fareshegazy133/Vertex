@@ -1,6 +1,6 @@
 ﻿// Vertex
 
-#include "Game/Object.h"
+#include "Core/Object/ObjectBase.h"
 
 namespace VCore
 {

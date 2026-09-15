@@ -3,7 +3,6 @@
 #pragma once
 
 #include <type_traits>
-#include <utility>
 
 namespace VCore
 {
@@ -35,7 +34,8 @@ public:
 	T& operator*() const;
 	T* operator->() const;
 
-	explicit operator bool() const;
+	operator T* () const;
+	operator bool() const;
 
 private:
 	template <typename>

@@ -4,8 +4,8 @@
 
 #include <Core/Containers/Array.h>
 #include "Core/Memory/UniquePtr.h"
+#include "Core/Object/Object.h"
 #include "Core/Types/Numeric.h"
-#include "Game/Object.h"
 
 namespace VCore
 {

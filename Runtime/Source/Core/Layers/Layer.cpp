@@ -10,9 +10,9 @@ void VLayer::OnAttach()
 void VLayer::OnDetach()
 {}
 
-void VLayer::Update(float32 DeltaTime)
+void VLayer::Update(const float32 DeltaTime)
 {}
 
-void VLayer::Render()
+void VLayer::Render(VRenderCore::VRenderer* Renderer)
 {}
 }

@@ -150,37 +150,376 @@
     <ClInclude Include="Runtime\Source\Core\Containers\Map.inl" />
     <ClInclude Include="Runtime\Source\Core\Containers\MapIterator.h" />
     <ClInclude Include="Runtime\Source\Core\Containers\MapIterator.inl" />
+    <ClInclude Include="Runtime\Source\Core\Containers\Pair.h" />
+    <ClInclude Include="Runtime\Source\Core\Containers\Pair.inl" />
+    <ClInclude Include="Runtime\Source\Core\CoreAliases.h" />
     <ClInclude Include="Runtime\Source\Core\CoreMinimal.h" />
     <ClInclude Include="Runtime\Source\Core\Layers\AppLayer.h" />
     <ClInclude Include="Runtime\Source\Core\Layers\Layer.h" />
-    <ClInclude Include="Runtime\Source\Core\Layers\OverlayLayer.h" />
     <ClInclude Include="Runtime\Source\Core\Memory\ObjectPtr.h" />
     <ClInclude Include="Runtime\Source\Core\Memory\ObjectPtr.inl" />
     <ClInclude Include="Runtime\Source\Core\Memory\ReferencePtr.h" />
     <ClInclude Include="Runtime\Source\Core\Memory\ReferencePtr.inl" />
     <ClInclude Include="Runtime\Source\Core\Memory\UniquePtr.h" />
     <ClInclude Include="Runtime\Source\Core\Memory\UniquePtr.inl" />
+    <ClInclude Include="Runtime\Source\Core\Object\Object.h" />
+    <ClInclude Include="Runtime\Source\Core\Object\ObjectBase.h" />
+    <ClInclude Include="Runtime\Source\Core\Object\ObjectBaseUtility.h" />
     <ClInclude Include="Runtime\Source\Core\Types\Numeric.h" />
-    <ClInclude Include="Runtime\Source\Core\Types\Pair.h" />
-    <ClInclude Include="Runtime\Source\Core\Types\Pair.inl" />
     <ClInclude Include="Runtime\Source\Core\Types\String.h" />
-    <ClInclude Include="Runtime\Source\Game\Object.h" />
+    <ClInclude Include="Runtime\Source\Math\Rotator.h" />
+    <ClInclude Include="Runtime\Source\Math\Transform.h" />
+    <ClInclude Include="Runtime\Source\Math\Vector.h" />
+    <ClInclude Include="Runtime\Source\Render\Passes\RenderPass.h" />
+    <ClInclude Include="Runtime\Source\Render\Passes\WorldPass.h" />
+    <ClInclude Include="Runtime\Source\Render\RenderCore\RenderCommand.h" />
+    <ClInclude Include="Runtime\Source\Render\RenderCore\Renderer.h" />
+    <ClInclude Include="Runtime\Source\Render\RenderCore\RenderObject.h" />
+    <ClInclude Include="Runtime\Source\Render\RenderCore\RenderScene.h" />
+    <ClInclude Include="Runtime\Source\Render\RenderCore\RenderView.h" />
+    <ClInclude Include="Runtime\Source\Render\RHI\RaylibRHI.h" />
+    <ClInclude Include="Runtime\Source\Render\RHI\RHI.h" />
+    <ClInclude Include="Runtime\Source\Scene\Actor.h" />
     <ClInclude Include="Runtime\Source\Input\InputAction.h" />
     <ClInclude Include="Runtime\Source\Input\InputCodes.h" />
     <ClInclude Include="Runtime\Source\Input\InputManager.h" />
+    <ClInclude Include="Runtime\Source\Scene\World.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Runtime\Source\Core\Application\Application.cpp" />
     <ClCompile Include="Runtime\Source\Core\Application\Window.cpp" />
     <ClCompile Include="Runtime\Source\Core\Layers\AppLayer.cpp" />
     <ClCompile Include="Runtime\Source\Core\Layers\Layer.cpp" />
-    <ClCompile Include="Runtime\Source\Core\Layers\OverlayLayer.cpp" />
     <ClCompile Include="Runtime\Source\Core\Memory\ObjectPtr.cpp" />
+    <ClCompile Include="Runtime\Source\Core\Object\Object.cpp" />
+    <ClCompile Include="Runtime\Source\Core\Object\ObjectBase.cpp" />
+    <ClCompile Include="Runtime\Source\Core\Object\ObjectBaseUtility.cpp" />
     <ClCompile Include="Runtime\Source\Core\Types\String.cpp" />
-    <ClCompile Include="Runtime\Source\Game\Object.cpp" />
+    <ClCompile Include="Runtime\Source\Math\Rotator.cpp">
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <Optimization>Disabled</Optimization>
+      <SupportJustMyCode>true</SupportJustMyCode>
+      <AssemblerOutput>NoListing</AssemblerOutput>
+      <AssemblerListingLocation>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\</AssemblerListingLocation>
+      <UndefineAllPreprocessorDefinitions>false</UndefineAllPreprocessorDefinitions>
+      <BrowseInformation>false</BrowseInformation>
+      <BrowseInformationFile>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\</BrowseInformationFile>
+      <CompileAs>Default</CompileAs>
+      <UseDynamicDebugging>false</UseDynamicDebugging>
+      <ConformanceMode>Default</ConformanceMode>
+      <DiagnosticsFormat>Column</DiagnosticsFormat>
+      <DisableLanguageExtensions>false</DisableLanguageExtensions>
+      <ErrorReporting>Prompt</ErrorReporting>
+      <ExpandAttributedSource>false</ExpandAttributedSource>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <EnableASAN>false</EnableASAN>
+      <EnableFuzzer>false</EnableFuzzer>
+      <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <EnableVectorLength>NotSet</EnableVectorLength>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <ForceConformanceInForLoopScope>true</ForceConformanceInForLoopScope>
+      <GenerateModuleDependencies>false</GenerateModuleDependencies>
+      <GenerateSourceDependencies>false</GenerateSourceDependencies>
+      <GenerateXMLDocumentationFiles>false</GenerateXMLDocumentationFiles>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <IgnoreStandardIncludePath>false</IgnoreStandardIncludePath>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>Default</LanguageStandard_C>
+      <MinimalRebuild>false</MinimalRebuild>
+      <ModuleDependenciesFile>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\</ModuleDependenciesFile>
+      <ModuleOutputFile>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\</ModuleOutputFile>
+      <OmitDefaultLibName>false</OmitDefaultLibName>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <ObjectFileName>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\</ObjectFileName>
+      <CallingConvention>Cdecl</CallingConvention>
+      <ProgramDataBaseFileName>..\Binaries\windows-x86_64\Debug\VertexRuntime\VertexRuntime.pdb</ProgramDataBaseFileName>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\VertexRuntime.pch</PrecompiledHeaderOutputFile>
+      <PreprocessToFile>false</PreprocessToFile>
+      <PreprocessKeepComments>false</PreprocessKeepComments>
+      <PreprocessSuppressLineNumbers>false</PreprocessSuppressLineNumbers>
+      <RemoveUnreferencedCodeData>true</RemoveUnreferencedCodeData>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+      <ShowIncludes>false</ShowIncludes>
+      <SourceDependenciesFile>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\</SourceDependenciesFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <SmallerTypeCheck>false</SmallerTypeCheck>
+      <SpectreMitigation>false</SpectreMitigation>
+      <StructMemberAlignment>Default</StructMemberAlignment>
+      <TrackerLogDirectory>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\VertexRuntime.tlog\</TrackerLogDirectory>
+      <TranslateIncludes>false</TranslateIncludes>
+      <MinimalRebuildFromTracking>true</MinimalRebuildFromTracking>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <UseFullPaths>true</UseFullPaths>
+      <WarningLevel>Level3</WarningLevel>
+      <XMLDocumentationFileName>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\</XMLDocumentationFileName>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <IntelJCCErratum>false</IntelJCCErratum>
+      <BuildStlModules>false</BuildStlModules>
+      <TreatAngleIncludeAsExternal>false</TreatAngleIncludeAsExternal>
+      <ExternalWarningLevel>Level3</ExternalWarningLevel>
+      <TreatExternalTemplatesAsInternal>true</TreatExternalTemplatesAsInternal>
+      <DisableAnalyzeExternal>false</DisableAnalyzeExternal>
+      <PreprocessorDefinitions>DEBUG;_UNICODE;UNICODE;</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>Runtime\Source;Vendor\raylib\src;</AdditionalIncludeDirectories>
+      <AdditionalOptions>/EHsc /Zc:preprocessor /Zc:__cplusplus </AdditionalOptions>
+      <LibCompiled>true</LibCompiled>
+    </ClCompile>
+    <ClCompile Include="Runtime\Source\Math\Transform.cpp" />
+    <ClCompile Include="Runtime\Source\Math\Vector.cpp">
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <Optimization>Disabled</Optimization>
+      <SupportJustMyCode>true</SupportJustMyCode>
+      <AssemblerOutput>NoListing</AssemblerOutput>
+      <AssemblerListingLocation>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\</AssemblerListingLocation>
+      <UndefineAllPreprocessorDefinitions>false</UndefineAllPreprocessorDefinitions>
+      <BrowseInformation>false</BrowseInformation>
+      <BrowseInformationFile>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\</BrowseInformationFile>
+      <CompileAs>Default</CompileAs>
+      <UseDynamicDebugging>false</UseDynamicDebugging>
+      <ConformanceMode>Default</ConformanceMode>
+      <DiagnosticsFormat>Column</DiagnosticsFormat>
+      <DisableLanguageExtensions>false</DisableLanguageExtensions>
+      <ErrorReporting>Prompt</ErrorReporting>
+      <ExpandAttributedSource>false</ExpandAttributedSource>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <EnableASAN>false</EnableASAN>
+      <EnableFuzzer>false</EnableFuzzer>
+      <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <EnableVectorLength>NotSet</EnableVectorLength>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <ForceConformanceInForLoopScope>true</ForceConformanceInForLoopScope>
+      <GenerateModuleDependencies>false</GenerateModuleDependencies>
+      <GenerateSourceDependencies>false</GenerateSourceDependencies>
+      <GenerateXMLDocumentationFiles>false</GenerateXMLDocumentationFiles>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <IgnoreStandardIncludePath>false</IgnoreStandardIncludePath>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>Default</LanguageStandard_C>
+      <MinimalRebuild>false</MinimalRebuild>
+      <ModuleDependenciesFile>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\</ModuleDependenciesFile>
+      <ModuleOutputFile>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\</ModuleOutputFile>
+      <OmitDefaultLibName>false</OmitDefaultLibName>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <ObjectFileName>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\</ObjectFileName>
+      <CallingConvention>Cdecl</CallingConvention>
+      <ProgramDataBaseFileName>..\Binaries\windows-x86_64\Debug\VertexRuntime\VertexRuntime.pdb</ProgramDataBaseFileName>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\VertexRuntime.pch</PrecompiledHeaderOutputFile>
+      <PreprocessToFile>false</PreprocessToFile>
+      <PreprocessKeepComments>false</PreprocessKeepComments>
+      <PreprocessSuppressLineNumbers>false</PreprocessSuppressLineNumbers>
+      <RemoveUnreferencedCodeData>true</RemoveUnreferencedCodeData>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+      <ShowIncludes>false</ShowIncludes>
+      <SourceDependenciesFile>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\</SourceDependenciesFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <SmallerTypeCheck>false</SmallerTypeCheck>
+      <SpectreMitigation>false</SpectreMitigation>
+      <StructMemberAlignment>Default</StructMemberAlignment>
+      <TrackerLogDirectory>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\VertexRuntime.tlog\</TrackerLogDirectory>
+      <TranslateIncludes>false</TranslateIncludes>
+      <MinimalRebuildFromTracking>true</MinimalRebuildFromTracking>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <UseFullPaths>true</UseFullPaths>
+      <WarningLevel>Level3</WarningLevel>
+      <XMLDocumentationFileName>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\</XMLDocumentationFileName>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <IntelJCCErratum>false</IntelJCCErratum>
+      <BuildStlModules>false</BuildStlModules>
+      <TreatAngleIncludeAsExternal>false</TreatAngleIncludeAsExternal>
+      <ExternalWarningLevel>Level3</ExternalWarningLevel>
+      <TreatExternalTemplatesAsInternal>true</TreatExternalTemplatesAsInternal>
+      <DisableAnalyzeExternal>false</DisableAnalyzeExternal>
+      <PreprocessorDefinitions>DEBUG;_UNICODE;UNICODE;</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>Runtime\Source;Vendor\raylib\src;</AdditionalIncludeDirectories>
+      <AdditionalOptions>/EHsc /Zc:preprocessor /Zc:__cplusplus </AdditionalOptions>
+      <LibCompiled>true</LibCompiled>
+    </ClCompile>
+    <ClCompile Include="Runtime\Source\Render\Passes\RenderPass.cpp" />
+    <ClCompile Include="Runtime\Source\Render\Passes\WorldPass.cpp" />
+    <ClCompile Include="Runtime\Source\Render\RenderCore\RenderCommand.cpp" />
+    <ClCompile Include="Runtime\Source\Render\RenderCore\Renderer.cpp">
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <Optimization>Disabled</Optimization>
+      <SupportJustMyCode>true</SupportJustMyCode>
+      <AssemblerOutput>NoListing</AssemblerOutput>
+      <AssemblerListingLocation>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\</AssemblerListingLocation>
+      <UndefineAllPreprocessorDefinitions>false</UndefineAllPreprocessorDefinitions>
+      <BrowseInformation>false</BrowseInformation>
+      <BrowseInformationFile>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\</BrowseInformationFile>
+      <CompileAs>Default</CompileAs>
+      <UseDynamicDebugging>false</UseDynamicDebugging>
+      <ConformanceMode>Default</ConformanceMode>
+      <DiagnosticsFormat>Column</DiagnosticsFormat>
+      <DisableLanguageExtensions>false</DisableLanguageExtensions>
+      <ErrorReporting>Prompt</ErrorReporting>
+      <ExpandAttributedSource>false</ExpandAttributedSource>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <EnableASAN>false</EnableASAN>
+      <EnableFuzzer>false</EnableFuzzer>
+      <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <EnableVectorLength>NotSet</EnableVectorLength>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <ForceConformanceInForLoopScope>true</ForceConformanceInForLoopScope>
+      <GenerateModuleDependencies>false</GenerateModuleDependencies>
+      <GenerateSourceDependencies>false</GenerateSourceDependencies>
+      <GenerateXMLDocumentationFiles>false</GenerateXMLDocumentationFiles>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <IgnoreStandardIncludePath>false</IgnoreStandardIncludePath>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>Default</LanguageStandard_C>
+      <MinimalRebuild>false</MinimalRebuild>
+      <ModuleDependenciesFile>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\</ModuleDependenciesFile>
+      <ModuleOutputFile>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\</ModuleOutputFile>
+      <OmitDefaultLibName>false</OmitDefaultLibName>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <ObjectFileName>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\</ObjectFileName>
+      <CallingConvention>Cdecl</CallingConvention>
+      <ProgramDataBaseFileName>..\Binaries\windows-x86_64\Debug\VertexRuntime\VertexRuntime.pdb</ProgramDataBaseFileName>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\VertexRuntime.pch</PrecompiledHeaderOutputFile>
+      <PreprocessToFile>false</PreprocessToFile>
+      <PreprocessKeepComments>false</PreprocessKeepComments>
+      <PreprocessSuppressLineNumbers>false</PreprocessSuppressLineNumbers>
+      <RemoveUnreferencedCodeData>true</RemoveUnreferencedCodeData>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+      <ShowIncludes>false</ShowIncludes>
+      <SourceDependenciesFile>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\</SourceDependenciesFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <SmallerTypeCheck>false</SmallerTypeCheck>
+      <SpectreMitigation>false</SpectreMitigation>
+      <StructMemberAlignment>Default</StructMemberAlignment>
+      <TrackerLogDirectory>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\VertexRuntime.tlog\</TrackerLogDirectory>
+      <TranslateIncludes>false</TranslateIncludes>
+      <MinimalRebuildFromTracking>true</MinimalRebuildFromTracking>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <UseFullPaths>true</UseFullPaths>
+      <WarningLevel>Level3</WarningLevel>
+      <XMLDocumentationFileName>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\</XMLDocumentationFileName>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <IntelJCCErratum>false</IntelJCCErratum>
+      <BuildStlModules>false</BuildStlModules>
+      <TreatAngleIncludeAsExternal>false</TreatAngleIncludeAsExternal>
+      <ExternalWarningLevel>Level3</ExternalWarningLevel>
+      <TreatExternalTemplatesAsInternal>true</TreatExternalTemplatesAsInternal>
+      <DisableAnalyzeExternal>false</DisableAnalyzeExternal>
+      <PreprocessorDefinitions>DEBUG;_UNICODE;UNICODE;</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>Runtime\Source;Vendor\raylib\src;</AdditionalIncludeDirectories>
+      <AdditionalOptions>/EHsc /Zc:preprocessor /Zc:__cplusplus </AdditionalOptions>
+      <LibCompiled>true</LibCompiled>
+    </ClCompile>
+    <ClCompile Include="Runtime\Source\Render\RenderCore\RenderObject.cpp" />
+    <ClCompile Include="Runtime\Source\Render\RenderCore\RenderScene.cpp" />
+    <ClCompile Include="Runtime\Source\Render\RenderCore\RenderView.cpp" />
+    <ClCompile Include="Runtime\Source\Render\RHI\RaylibRHI.cpp" />
+    <ClCompile Include="Runtime\Source\Render\RHI\RHI.cpp" />
+    <ClCompile Include="Runtime\Source\Scene\Actor.cpp">
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <Optimization>Disabled</Optimization>
+      <SupportJustMyCode>true</SupportJustMyCode>
+      <AssemblerOutput>NoListing</AssemblerOutput>
+      <AssemblerListingLocation>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\</AssemblerListingLocation>
+      <UndefineAllPreprocessorDefinitions>false</UndefineAllPreprocessorDefinitions>
+      <BrowseInformation>false</BrowseInformation>
+      <BrowseInformationFile>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\</BrowseInformationFile>
+      <CompileAs>Default</CompileAs>
+      <UseDynamicDebugging>false</UseDynamicDebugging>
+      <ConformanceMode>Default</ConformanceMode>
+      <DiagnosticsFormat>Column</DiagnosticsFormat>
+      <DisableLanguageExtensions>false</DisableLanguageExtensions>
+      <ErrorReporting>Prompt</ErrorReporting>
+      <ExpandAttributedSource>false</ExpandAttributedSource>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <EnableASAN>false</EnableASAN>
+      <EnableFuzzer>false</EnableFuzzer>
+      <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <EnableVectorLength>NotSet</EnableVectorLength>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <ForceConformanceInForLoopScope>true</ForceConformanceInForLoopScope>
+      <GenerateModuleDependencies>false</GenerateModuleDependencies>
+      <GenerateSourceDependencies>false</GenerateSourceDependencies>
+      <GenerateXMLDocumentationFiles>false</GenerateXMLDocumentationFiles>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <IgnoreStandardIncludePath>false</IgnoreStandardIncludePath>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>Default</LanguageStandard_C>
+      <MinimalRebuild>false</MinimalRebuild>
+      <ModuleDependenciesFile>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\</ModuleDependenciesFile>
+      <ModuleOutputFile>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\</ModuleOutputFile>
+      <OmitDefaultLibName>false</OmitDefaultLibName>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <ObjectFileName>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\</ObjectFileName>
+      <CallingConvention>Cdecl</CallingConvention>
+      <ProgramDataBaseFileName>..\Binaries\windows-x86_64\Debug\VertexRuntime\VertexRuntime.pdb</ProgramDataBaseFileName>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\VertexRuntime.pch</PrecompiledHeaderOutputFile>
+      <PreprocessToFile>false</PreprocessToFile>
+      <PreprocessKeepComments>false</PreprocessKeepComments>
+      <PreprocessSuppressLineNumbers>false</PreprocessSuppressLineNumbers>
+      <RemoveUnreferencedCodeData>true</RemoveUnreferencedCodeData>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+      <ShowIncludes>false</ShowIncludes>
+      <SourceDependenciesFile>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\</SourceDependenciesFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <SmallerTypeCheck>false</SmallerTypeCheck>
+      <SpectreMitigation>false</SpectreMitigation>
+      <StructMemberAlignment>Default</StructMemberAlignment>
+      <TrackerLogDirectory>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\VertexRuntime.tlog\</TrackerLogDirectory>
+      <TranslateIncludes>false</TranslateIncludes>
+      <MinimalRebuildFromTracking>true</MinimalRebuildFromTracking>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <UseFullPaths>true</UseFullPaths>
+      <WarningLevel>Level3</WarningLevel>
+      <XMLDocumentationFileName>..\Binaries\Intermediates\windows-x86_64\Debug\VertexRuntime\</XMLDocumentationFileName>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <IntelJCCErratum>false</IntelJCCErratum>
+      <BuildStlModules>false</BuildStlModules>
+      <TreatAngleIncludeAsExternal>false</TreatAngleIncludeAsExternal>
+      <ExternalWarningLevel>Level3</ExternalWarningLevel>
+      <TreatExternalTemplatesAsInternal>true</TreatExternalTemplatesAsInternal>
+      <DisableAnalyzeExternal>false</DisableAnalyzeExternal>
+      <PreprocessorDefinitions>DEBUG;_UNICODE;UNICODE;</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>Runtime\Source;Vendor\raylib\src;</AdditionalIncludeDirectories>
+      <AdditionalOptions>/EHsc /Zc:preprocessor /Zc:__cplusplus </AdditionalOptions>
+      <LibCompiled>true</LibCompiled>
+    </ClCompile>
     <ClCompile Include="Runtime\Source\Input\InputAction.cpp" />
     <ClCompile Include="Runtime\Source\Input\InputCodes.cpp" />
     <ClCompile Include="Runtime\Source\Input\InputManager.cpp" />
+    <ClCompile Include="Runtime\Source\Scene\World.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Runtime\Source\Render\Resources\" />
+    <Folder Include="Runtime\Source\Render\Scene\" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

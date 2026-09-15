@@ -95,6 +95,12 @@ T* VUniquePtr<T>::operator->() const
 }
 
 template <typename T>
+VUniquePtr<T>::operator T*() const
+{
+	return RawPtr;
+}
+
+template <typename T>
 VUniquePtr<T>::operator bool() const
 {
 	return RawPtr != nullptr;

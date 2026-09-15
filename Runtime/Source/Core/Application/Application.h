@@ -6,6 +6,10 @@
 #include "Core/Containers/Array.h"
 #include "Core/Layers/Layer.h"
 #include "Core/Memory/UniquePtr.h"
+#include "Render/RenderCore/Renderer.h"
+#include "Render/RenderCore/RenderView.h"
+#include "Render/RHI/RaylibRHI.h"
+#include "Scene/World.h"
 
 namespace VCore
 {
@@ -23,7 +27,7 @@ public:
 	
 	void RunApplication();
 	
-	template<typename T> requires std::derived_from<T,VLayer>
+	template<typename T> requires std::derived_from<T, VLayer>
 	void PushLayer();
 
 private:
@@ -34,6 +38,12 @@ private:
 	VArray<VUniquePtr<VLayer>> LayerStack;
 	
 	VUniquePtr<VWindow> MainWindow;
+	VRenderCore::VRenderer Renderer;
+	VRender::VRaylibRHI RHI;
+	
+	VWorld World;
+	VRenderCore::VRenderScene RenderScene;
+	VRenderCore::VRenderView RenderView;
 	
 	VApplicationSpecification ApplicationSpecification;
 	

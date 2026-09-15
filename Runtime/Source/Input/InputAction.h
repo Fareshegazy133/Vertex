@@ -5,7 +5,7 @@
 #include <functional>
 #include "InputCodes.h"
 #include "Core/Containers/Array.h"
-#include "Core/Types/Pair.h"
+#include "Core/Containers/Pair.h"
 #include "Core/Types/String.h"
 
 namespace VInput

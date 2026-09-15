@@ -4,6 +4,11 @@
 
 #include "Core/Types/Numeric.h"
 
+namespace VRenderCore
+{
+	class VRenderer;
+}
+
 namespace VCore
 {
 class VLayer
@@ -15,7 +20,7 @@ public:
 	virtual void OnAttach();
 	virtual void OnDetach();
 
-	virtual void Update(float32 DeltaTime);
-	virtual void Render();
+	virtual void Update(const float32 DeltaTime);
+	virtual void Render(VRenderCore::VRenderer* Renderer);
 };
 }

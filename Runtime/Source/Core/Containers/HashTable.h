@@ -3,8 +3,8 @@
 #pragma once
 
 #include "Core/Containers/Hash.h"
+#include "Core/Containers/Pair.h"
 #include "Core/Types/Numeric.h"
-#include "Core/Types/Pair.h"
 
 namespace VCore
 {

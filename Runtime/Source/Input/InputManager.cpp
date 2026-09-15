@@ -38,14 +38,14 @@ void VInputManager::UnbindAction(const VCore::VString& ActionName)
 	ActionBindings.Remove(ActionName);
 }
 
-VCore::uint32 VInputManager::GetMouseX()
+VCore::float32 VInputManager::GetMouseX()
 {
-	return ::GetMouseX();
+	return ::GetMousePosition().x;
 }
 
-VCore::uint32 VInputManager::GetMouseY()
+VCore::float32 VInputManager::GetMouseY()
 {
-	return ::GetMouseY();
+	return ::GetMousePosition().y;
 }
 
 VCore::float32 VInputManager::GetMouseDeltaX()
