@@ -3,16 +3,48 @@
 #pragma once
 
 #include "Core/CoreAliases.h"
-#include "Core/Object/ObjectBaseUtility.h"
+#include "Core/Object/ObjectBase.h"
+#include "Core/Object/ObjectFlags.h"
 
 namespace VCore
 {
-class VObject : public VObjectBaseUtility
+class VClass;
+class VObject;
+
+class VObject : public VObjectBase
 {
 public:
-	~VObject() override = default;
+	VObject();
+	virtual ~VObject() override = default;
+
+	virtual VClass* GetClass() const override;
+	static VClass* StaticClass();
 	
-protected:
-	bool IsValid(const VObject* Object) const;
+	void AddToRoot();
+	void RemoveFromRoot();
+	
+	void AddFlags(EVObjectFlags InObjectFlags);
+	void RemoveFlags(EVObjectFlags InObjectFlags);
+	
+	void MarkPendingKill();
+	
+	void SetOuter(VObject* InOuter);
+	void SetName(const VString& InName);
+	
+	VObject* GetOuter() const;
+	VObject* GetOuterMost() const;
+	EVObjectFlags GetObjectFlags() const;
+	VString GetName() const;
+	VString GetPathName() const;
+	
+	bool HasAnyObjectFlags(EVObjectFlags InObjectFlags) const;
+	bool HasAllObjectFlags(EVObjectFlags InObjectFlags) const;
+	bool IsRootObject() const;
+	bool IsPendingKill() const;
+
+private:
+	VObject* Outer;
+	EVObjectFlags ObjectFlags;
+	VString Name = VString::NullString;
 };
 }

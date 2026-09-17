@@ -1,5 +1,7 @@
 ﻿// Vertex
 
+#pragma once
+
 namespace VCore
 {
 template <typename KeyType, typename ValueType, typename Hasher>

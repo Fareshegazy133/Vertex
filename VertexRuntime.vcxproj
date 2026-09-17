@@ -156,6 +156,9 @@
     <ClInclude Include="Runtime\Source\Core\CoreMinimal.h" />
     <ClInclude Include="Runtime\Source\Core\Layers\AppLayer.h" />
     <ClInclude Include="Runtime\Source\Core\Layers\Layer.h" />
+    <ClInclude Include="Runtime\Source\Core\Memory\GarbageCollector.h" />
+    <ClInclude Include="Runtime\Source\Core\Memory\ObjectHandle.h" />
+    <ClInclude Include="Runtime\Source\Core\Memory\ObjectManager.h" />
     <ClInclude Include="Runtime\Source\Core\Memory\ObjectPtr.h" />
     <ClInclude Include="Runtime\Source\Core\Memory\ObjectPtr.inl" />
     <ClInclude Include="Runtime\Source\Core\Memory\ReferencePtr.h" />
@@ -165,6 +168,18 @@
     <ClInclude Include="Runtime\Source\Core\Object\Object.h" />
     <ClInclude Include="Runtime\Source\Core\Object\ObjectBase.h" />
     <ClInclude Include="Runtime\Source\Core\Object\ObjectBaseUtility.h" />
+    <ClInclude Include="Runtime\Source\Core\Object\ObjectGlobals.h" />
+    <ClInclude Include="Runtime\Source\Core\Object\ObjectMacros.h" />
+    <ClInclude Include="Runtime\Source\Core\Reflection\Class.h" />
+    <ClInclude Include="Runtime\Source\Core\Reflection\Enum.h" />
+    <ClInclude Include="Runtime\Source\Core\Reflection\Field.h" />
+    <ClInclude Include="Runtime\Source\Core\Reflection\Function.h" />
+    <ClInclude Include="Runtime\Source\Core\Reflection\NumericProperty.h" />
+    <ClInclude Include="Runtime\Source\Core\Reflection\Property.h" />
+    <ClInclude Include="Runtime\Source\Core\Reflection\ReflectionRegistry.h" />
+    <ClInclude Include="Runtime\Source\Core\Reflection\ScriptStruct.h" />
+    <ClInclude Include="Runtime\Source\Core\Reflection\Struct.h" />
+    <ClInclude Include="Runtime\Source\Core\Serialization\Archive.h" />
     <ClInclude Include="Runtime\Source\Core\Types\Numeric.h" />
     <ClInclude Include="Runtime\Source\Core\Types\String.h" />
     <ClInclude Include="Runtime\Source\Math\Rotator.h" />
@@ -183,6 +198,7 @@
     <ClInclude Include="Runtime\Source\Input\InputAction.h" />
     <ClInclude Include="Runtime\Source\Input\InputCodes.h" />
     <ClInclude Include="Runtime\Source\Input\InputManager.h" />
+    <ClInclude Include="Runtime\Source\Scene\Example.h" />
     <ClInclude Include="Runtime\Source\Scene\World.h" />
   </ItemGroup>
   <ItemGroup>
@@ -190,10 +206,22 @@
     <ClCompile Include="Runtime\Source\Core\Application\Window.cpp" />
     <ClCompile Include="Runtime\Source\Core\Layers\AppLayer.cpp" />
     <ClCompile Include="Runtime\Source\Core\Layers\Layer.cpp" />
-    <ClCompile Include="Runtime\Source\Core\Memory\ObjectPtr.cpp" />
+    <ClCompile Include="Runtime\Source\Core\Memory\GarbageCollector.cpp" />
+    <ClCompile Include="Runtime\Source\Core\Memory\ObjectHandle.cpp" />
+    <ClCompile Include="Runtime\Source\Core\Memory\ObjectManager.cpp" />
     <ClCompile Include="Runtime\Source\Core\Object\Object.cpp" />
     <ClCompile Include="Runtime\Source\Core\Object\ObjectBase.cpp" />
     <ClCompile Include="Runtime\Source\Core\Object\ObjectBaseUtility.cpp" />
+    <ClCompile Include="Runtime\Source\Core\Reflection\Class.cpp" />
+    <ClCompile Include="Runtime\Source\Core\Reflection\Enum.cpp" />
+    <ClCompile Include="Runtime\Source\Core\Reflection\Field.cpp" />
+    <ClCompile Include="Runtime\Source\Core\Reflection\Function.cpp" />
+    <ClCompile Include="Runtime\Source\Core\Reflection\NumericProperty.cpp" />
+    <ClCompile Include="Runtime\Source\Core\Reflection\Property.cpp" />
+    <ClCompile Include="Runtime\Source\Core\Reflection\ReflectionRegistry.cpp" />
+    <ClCompile Include="Runtime\Source\Core\Reflection\ScriptStruct.cpp" />
+    <ClCompile Include="Runtime\Source\Core\Reflection\Struct.cpp" />
+    <ClCompile Include="Runtime\Source\Core\Serialization\Archive.cpp" />
     <ClCompile Include="Runtime\Source\Core\Types\String.cpp" />
     <ClCompile Include="Runtime\Source\Math\Rotator.cpp">
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -515,11 +543,15 @@
     <ClCompile Include="Runtime\Source\Input\InputAction.cpp" />
     <ClCompile Include="Runtime\Source\Input\InputCodes.cpp" />
     <ClCompile Include="Runtime\Source\Input\InputManager.cpp" />
+    <ClCompile Include="Runtime\Source\Scene\Example.cpp" />
     <ClCompile Include="Runtime\Source\Scene\World.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Runtime\Source\Render\Resources\" />
     <Folder Include="Runtime\Source\Render\Scene\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Runtime\Source\Core\Object\ObjectFlags.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

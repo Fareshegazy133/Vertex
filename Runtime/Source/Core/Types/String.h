@@ -127,6 +127,7 @@ public:
 
 public:
 	static const VString EmptyString;
+	static const VString NullString;
 	
 private:
 	void Allocate(const uint32 NewCapacity);

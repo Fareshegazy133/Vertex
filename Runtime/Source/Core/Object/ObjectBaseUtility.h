@@ -2,18 +2,25 @@
 
 #pragma once
 
-#include "Core/Object/ObjectBase.h"
 #include "Core/Types/String.h"
 
 namespace VCore
 {
-class VObjectBaseUtility : public VObjectBase
+class VObject;
+class VClass;
+
+class VObjectBaseUtility
 {
 public:
-	void SetName(const VString& InName);
-	VString GetName() const;
-
-private:
-	VString Name = VString::EmptyString;
+	static void Rename(VObject* Object, const VString& NewName);
+	static void DestroyObject(VObject* Object);
+	
+	static void SetOuter(VObject* Object, VObject* NewOuter);
+	
+	static VObject* FindObject(const VClass* Class, const VObject* Outer, const VString& Name);
+	static VObject* FindObjectByName(const VString& Name);
+	static VObject* FindObjectByPath(const VString& Path);
+	
+	static bool IsValid(const VObject* Object);
 };
 }

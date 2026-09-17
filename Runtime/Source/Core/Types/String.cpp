@@ -9,6 +9,7 @@
 namespace VCore
 {
 const VString VString::EmptyString = VString("");
+const VString VString::NullString = VString(nullptr);
 
 VString::VString()
 {

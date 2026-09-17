@@ -27,6 +27,8 @@ namespace VCore
 #define MIN_int64 std::numeric_limits<int64_t>min()
 #define MIN_uint64 std::numeric_limits<uint64_t>min()
 
+using TSize = size_t;
+
 using int8 = std::int8_t;
 using uint8 = std::uint8_t;
 
