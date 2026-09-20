@@ -26,8 +26,8 @@ void VInputAction::AddInputBinding(const VInputBinding& InputBinding)
 	if (InputBinding.TriggerInput == VKey::Null) return;
 
 	VCore::VPair<VInputBinding, VInputBindingState> InputBindingPair;
-	InputBindingPair.First = InputBinding;
-	InputBindingPair.Second = VInputBindingState();
+	InputBindingPair.FirstValue = InputBinding;
+	InputBindingPair.SecondValue = VInputBindingState();
 	
 	InputBindings.Add(InputBindingPair);
 }
@@ -36,7 +36,7 @@ void VInputAction::RemoveInputBinding(const VInputBinding& InputBinding)
 {
 	for (VCore::int32 Index = 0; Index < InputBindings.Num(); Index++)
 	{
-		const VInputBinding& CurrentInputBinding = InputBindings[Index].First;
+		const VInputBinding& CurrentInputBinding = InputBindings[Index].FirstValue;
 
 		if (CurrentInputBinding.TriggerInput != InputBinding.TriggerInput) continue;
 		if (CurrentInputBinding.InputTrigger != InputBinding.InputTrigger) continue;

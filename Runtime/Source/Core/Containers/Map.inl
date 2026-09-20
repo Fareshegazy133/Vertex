@@ -4,271 +4,607 @@
 
 namespace VCore
 {
-template <typename KeyType, typename ValueType, typename Hasher>
-VMap<KeyType, ValueType, Hasher>::VMap(const VMap& OtherMap)
-	: HashTable(OtherMap.HashTable)
+template <typename KeyType, typename ValueType>
+VMap<KeyType, ValueType>::VMap(VMap&& OtherMap) noexcept
+	: Elements(std::move(OtherMap.Elements)),NextLinks(std::move(OtherMap.NextLinks)), HashTable(std::move(OtherMap.HashTable))
 {}
 
-template <typename KeyType, typename ValueType, typename Hasher>
-VMap<KeyType, ValueType, Hasher>::VMap(VMap&& OtherMap) noexcept
-	: HashTable(std::move(OtherMap.HashTable))
-{}
-
-template <typename KeyType, typename ValueType, typename Hasher>
-void VMap<KeyType, ValueType, Hasher>::Reserve(int32 NewCapacity)
+template <typename KeyType, typename ValueType>
+VMap<KeyType, ValueType>::VMap(const VMap& OtherMap)
 {
+	Reserve(OtherMap.Num());
+
+	for (const auto& Element : OtherMap.Elements)
+	{
+		Add(Element.Key, Element.Value);
+	}
+}
+
+template <typename KeyType, typename ValueType>
+VMap<KeyType, ValueType>::VMap(const int32 InitialCapacity)
+	: Elements(InitialCapacity), HashTable(InitialCapacity * 2)
+{
+	NextLinks.Reserve(InitialCapacity);
+}
+
+template <typename KeyType, typename ValueType>
+template <typename TFunction>
+void VMap<KeyType, ValueType>::ForEach(TFunction&& Function)
+{
+	for (auto& Element : Elements)
+	{
+		Function(Element.Key, Element.Value);
+	}
+}
+
+template <typename KeyType, typename ValueType>
+template <typename TFunction>
+void VMap<KeyType, ValueType>::ForEach(TFunction&& Function) const
+{
+	for (const auto& Element : Elements)
+	{
+		Function(Element.Key, Element.Value);
+	}
+}
+
+template <typename KeyType, typename ValueType>
+template <typename ... TArgs>
+ValueType& VMap<KeyType, ValueType>::Emplace(KeyType Key, TArgs&&... Arguments)
+{
+	const int32 Existing = FindIndex(Key);
+	if (Existing != INDEX_NONE) return Elements[Existing].Value;
+	
+	VElement Element;
+	Element.Key = std::move(Key);
+	Element.Value = ValueType(std::forward<TArgs>(Arguments)...);
+	Element.Hash = VHash<KeyType>::Hash(Element.Key);
+
+	const int32 Index = AddElement(std::move(Element));
+	return Elements[Index].Value;
+}
+
+template <typename KeyType, typename ValueType>
+template <typename TPredicate>
+int32 VMap<KeyType, ValueType>::RemoveAll(TPredicate&& Predicate)
+{
+	VArray<KeyType> KeysToRemove;
+	int32 Removed = 0;
+	
+	for (const auto& Element : Elements)
+	{
+		if (Predicate(Element.Key, Element.Value))
+		{
+			KeysToRemove.Add(Element.Key);
+		}
+	}
+
+	for (const auto& Key : KeysToRemove)
+	{
+		if (Remove(Key))
+		{
+			Removed++;
+		}
+	}
+
+	return Removed;
+}
+
+template <typename KeyType, typename ValueType>
+template <typename... TArgs>
+ValueType& VMap<KeyType, ValueType>::FindOrAdd(const KeyType& Key, TArgs&&... Arguments)
+{
+	if (ValueType* ExistingValue = Find(Key)) return *ExistingValue;
+	return Emplace(Key, std::forward<TArgs>(Arguments)...);
+}
+
+template <typename KeyType, typename ValueType>
+void VMap<KeyType, ValueType>::Reset()
+{
+	Elements.Reset();
+	NextLinks.Reset();
+	HashTable.Reset();
+}
+
+template <typename KeyType, typename ValueType>
+void VMap<KeyType, ValueType>::Reserve(const int32 NewCapacity)
+{
+	if (NewCapacity <= 0) return;
+	Elements.Reserve(NewCapacity);
+	NextLinks.Reserve(NewCapacity);
 	HashTable.Reserve(NewCapacity);
 }
 
-template <typename KeyType, typename ValueType, typename Hasher>
-ValueType& VMap<KeyType, ValueType, Hasher>::Add(const KeyType& Key, const ValueType& Value)
+template <typename KeyType, typename ValueType>
+void VMap<KeyType, ValueType>::Shrink()
 {
-	return HashTable.Insert(Key, Value);
+	RebuildHashTable();
 }
 
-template <typename KeyType, typename ValueType, typename Hasher>
-ValueType& VMap<KeyType, ValueType, Hasher>::Add(const KeyType& Key, ValueType&& Value)
+template <typename KeyType, typename ValueType>
+void VMap<KeyType, ValueType>::Empty()
 {
-	return HashTable.Insert(Key, std::move(Value));
-}
-
-template <typename KeyType, typename ValueType, typename Hasher>
-template <typename ... Args>
-ValueType& VMap<KeyType, ValueType, Hasher>::Emplace(const KeyType& Key, Args&&... Arguments)
-{
-	if (ValueType* Existing = Find(Key)) return *Existing;
-
-	ValueType Value(std::forward<Args>(Arguments)...);
-	return HashTable.Insert(Key, std::move(Value));
-}
-
-template <typename KeyType, typename ValueType, typename Hasher>
-bool VMap<KeyType, ValueType, Hasher>::Remove(const KeyType& Key)
-{
-	return HashTable.Remove(Key);
-}
-
-template <typename KeyType, typename ValueType, typename Hasher>
-void VMap<KeyType, ValueType, Hasher>::Shrink()
-{
-	HashTable.Shrink();
-}
-
-template <typename KeyType, typename ValueType, typename Hasher>
-void VMap<KeyType, ValueType, Hasher>::Empty()
-{
+	Elements.Empty();
+	NextLinks.Empty();
 	HashTable.Empty();
 }
 
-template <typename KeyType, typename ValueType, typename Hasher>
-template <typename TFunction>
-void VMap<KeyType, ValueType, Hasher>::ForEach(TFunction&& Function)
+template <typename KeyType, typename ValueType>
+void VMap<KeyType, ValueType>::Swap(VMap& OtherMap) noexcept
 {
-	for (VIterator Iterator = Begin(); Iterator != End(); ++Iterator)
-	{
-		Function(*Iterator);
-	}
 }
 
-template <typename KeyType, typename ValueType, typename Hasher>
-template <typename TFunction>
-void VMap<KeyType, ValueType, Hasher>::ForEach(TFunction&& Function) const
+template <typename KeyType, typename ValueType>
+ValueType& VMap<KeyType, ValueType>::Add(KeyType&& Key, ValueType&& Value)
 {
-	for (VConstIterator Iterator = Begin(); Iterator != End(); ++Iterator)
-	{
-		Function(*Iterator);
-	}
-}
+	const int32 Existing = FindIndex(Key);
 
-template <typename KeyType, typename ValueType, typename Hasher>
-VMap<KeyType, ValueType, Hasher>::VIterator VMap<KeyType, ValueType, Hasher>::Begin()
-{
-	for (int32 BucketIndex = 0; BucketIndex < HashTable.BucketCount; BucketIndex++)
+	if (Existing != INDEX_NONE)
 	{
-		if (HashTable.Buckets[BucketIndex])
-		{
-			return VIterator(&HashTable, HashTable.Buckets[BucketIndex], BucketIndex);
-		}
+		Elements[Existing].Value = std::move(Value);
+		return Elements[Existing].Value;
 	}
 
-	return End();
+	VElement Element;
+	Element.Key = std::move(Key);
+	Element.Value = std::move(Value);
+	Element.Hash = VHash<KeyType>::Hash(Element.Key);
+
+	const int32 Index = AddElement(std::move(Element));
+	return Elements[Index].Value;
 }
 
-template <typename KeyType, typename ValueType, typename Hasher>
-VMap<KeyType, ValueType, Hasher>::VIterator VMap<KeyType, ValueType, Hasher>::begin()
+template <typename KeyType, typename ValueType>
+ValueType& VMap<KeyType, ValueType>::Add(const KeyType& Key, ValueType&& Value)
 {
-	return Begin();
-}
+	const int32 Existing = FindIndex(Key);
 
-template <typename KeyType, typename ValueType, typename Hasher>
-VMap<KeyType, ValueType, Hasher>::VConstIterator VMap<KeyType, ValueType, Hasher>::Begin() const
-{
-	for (int32 BucketIndex = 0; BucketIndex < HashTable.BucketCount; BucketIndex++)
+	if (Existing != INDEX_NONE)
 	{
-		if (HashTable.Buckets[BucketIndex])
-		{
-			return VConstIterator(&HashTable, HashTable.Buckets[BucketIndex], BucketIndex);
-		}
+		Elements[Existing].Value = std::move(Value);
+		return Elements[Existing].Value;
 	}
 
-	return End();
+	VElement Element;
+	Element.Key = Key;
+	Element.Value = std::move(Value);
+	Element.Hash = VHash<KeyType>::Hash(Key);
+
+	const int32 Index = AddElement(std::move(Element));
+	return Elements[Index].Value;
 }
 
-template <typename KeyType, typename ValueType, typename Hasher>
-VMap<KeyType, ValueType, Hasher>::VConstIterator VMap<KeyType, ValueType, Hasher>::begin() const
+template <typename KeyType, typename ValueType>
+ValueType& VMap<KeyType, ValueType>::Add(const KeyType& Key, const ValueType& Value)
 {
-	return Begin();
+	const int32 Existing = FindIndex(Key);
+
+	if (Existing != INDEX_NONE)
+	{
+		Elements[Existing].Value = Value;
+		return Elements[Existing].Value;
+	}
+
+	VElement Element;
+	Element.Key = Key;
+	Element.Value = Value;
+	Element.Hash = VHash<KeyType>::Hash(Key);
+
+	const int32 Index = AddElement(std::move(Element));
+	return Elements[Index].Value;
 }
 
-template <typename KeyType, typename ValueType, typename Hasher>
-VMap<KeyType, ValueType, Hasher>::VIterator VMap<KeyType, ValueType, Hasher>::End()
+template <typename KeyType, typename ValueType>
+bool VMap<KeyType, ValueType>::TryAdd(const KeyType& Key, const ValueType& Value)
 {
-	return VIterator(&HashTable, nullptr, HashTable.BucketCount);
+	if (Contains(Key)) return false;
+	Add(Key, Value);
+	return true;
 }
 
-template <typename KeyType, typename ValueType, typename Hasher>
-VMap<KeyType, ValueType, Hasher>::VIterator VMap<KeyType, ValueType, Hasher>::end()
+template <typename KeyType, typename ValueType>
+bool VMap<KeyType, ValueType>::Remove(const KeyType& Key)
 {
-	return End();
-}
+	const int32 Index = FindIndex(Key);
+	if (Index == INDEX_NONE) return false;
 
-template <typename KeyType, typename ValueType, typename Hasher>
-VMap<KeyType, ValueType, Hasher>::VConstIterator VMap<KeyType, ValueType, Hasher>::End() const
-{
-	return VConstIterator(&HashTable, nullptr, HashTable.BucketCount);
-}
-
-template <typename KeyType, typename ValueType, typename Hasher>
-VMap<KeyType, ValueType, Hasher>::VConstIterator VMap<KeyType, ValueType, Hasher>::end() const
-{
-	return End();
-}
-
-template <typename KeyType, typename ValueType, typename Hasher>
-VArray<KeyType> VMap<KeyType, ValueType, Hasher>::GetKeys() const
-{
-	VArray<KeyType> KeysResult;
-
-	ForEach([&KeysResult](const VPair<const KeyType, ValueType>& Pair)
-		{
-			KeysResult.Add(Pair.First);
-		});
+	const uint32 Hash = Elements[Index].Hash;
+	HashTable.Remove(NextLinks, Index, Hash);
+	Elements.RemoveAt(Index);
 	
-	return KeysResult;
+	NextLinks[Index] = INDEX_NONE;
+	return true;
 }
 
-template <typename KeyType, typename ValueType, typename Hasher>
-VArray<ValueType> VMap<KeyType, ValueType, Hasher>::GetValues() const
+template <typename KeyType, typename ValueType>
+void VMap<KeyType, ValueType>::GenerateKeyArray(VArray<KeyType>& OutKeys) const
 {
-	VArray<ValueType> ValuesResult;
+	OutKeys.Reset();
+	OutKeys.Reserve(Num());
 
-	ForEach([&ValuesResult](const VPair<const KeyType, ValueType>& Pair)
-		{
-			ValuesResult.Add(Pair.Second);
-		});
-	
-	return ValuesResult;
+	for (const auto& Element : Elements)
+	{
+		OutKeys.Add(Element.Key);
+	}
 }
 
-template <typename KeyType, typename ValueType, typename Hasher>
-ValueType* VMap<KeyType, ValueType, Hasher>::Find(const KeyType& Key)
+template <typename KeyType, typename ValueType>
+void VMap<KeyType, ValueType>::GenerateValueArray(VArray<ValueType>& OutValues) const
 {
-	return HashTable.Find(Key);
+	OutValues.Reset();
+	OutValues.Reserve(Num());
+
+	for (const auto& Element : Elements)
+	{
+		OutValues.Add(Element.Value);
+	}
 }
 
-template <typename KeyType, typename ValueType, typename Hasher>
-const ValueType* VMap<KeyType, ValueType, Hasher>::Find(const KeyType& Key) const
+template <typename KeyType, typename ValueType>
+VArray<KeyType> VMap<KeyType, ValueType>::GetKeys() const
 {
-	return HashTable.Find(Key);
+	VArray<KeyType> Result;
+	Result.Reserve(Num());
+
+	for (const auto& Element : Elements)
+	{
+		Result.Add(Element.Key);
+	}
+
+	return Result;
 }
 
-template <typename KeyType, typename ValueType, typename Hasher>
-ValueType& VMap<KeyType, ValueType, Hasher>::FindChecked(const KeyType& Key)
+template <typename KeyType, typename ValueType>
+VArray<ValueType> VMap<KeyType, ValueType>::GetValues() const
+{
+	VArray<ValueType> Result;
+	Result.Reserve(Num());
+
+	for (const auto& Element : Elements)
+	{
+		Result.Add(Element.Value);
+	}
+
+	return Result;
+}
+
+template <typename KeyType, typename ValueType>
+VMap<KeyType, ValueType>::Iterator VMap<KeyType, ValueType>::Begin()
+{
+	return Iterator(this, 0);
+}
+
+template <typename KeyType, typename ValueType>
+VMap<KeyType, ValueType>::Iterator VMap<KeyType, ValueType>::begin()
+{
+	return Iterator(this, 0);
+}
+
+template <typename KeyType, typename ValueType>
+VMap<KeyType, ValueType>::ConstIterator VMap<KeyType, ValueType>::Begin() const
+{
+	return ConstIterator(this, 0);
+}
+
+template <typename KeyType, typename ValueType>
+VMap<KeyType, ValueType>::ConstIterator VMap<KeyType, ValueType>::begin() const
+{
+	return ConstIterator(this, 0);
+}
+
+template <typename KeyType, typename ValueType>
+VMap<KeyType, ValueType>::Iterator VMap<KeyType, ValueType>::End()
+{
+	return Iterator(this, Elements.Max());
+}
+
+template <typename KeyType, typename ValueType>
+VMap<KeyType, ValueType>::Iterator VMap<KeyType, ValueType>::end()
+{
+	return Iterator(this, Elements.Max());
+}
+
+template <typename KeyType, typename ValueType>
+VMap<KeyType, ValueType>::ConstIterator VMap<KeyType, ValueType>::End() const
+{
+	return ConstIterator(this, Elements.Max());
+}
+
+template <typename KeyType, typename ValueType>
+VMap<KeyType, ValueType>::ConstIterator VMap<KeyType, ValueType>::end() const
+{
+	return ConstIterator(this, Elements.Max());
+}
+
+template <typename KeyType, typename ValueType>
+ValueType* VMap<KeyType, ValueType>::Find(const KeyType& Key)
+{
+	const int32 Index = FindIndex(Key);
+	return Index == INDEX_NONE ? nullptr : &Elements[Index].Value;
+}
+
+template <typename KeyType, typename ValueType>
+const ValueType* VMap<KeyType, ValueType>::Find(const KeyType& Key) const
+{
+	const int32 Index = FindIndex(Key);
+	return Index == INDEX_NONE ? nullptr : &Elements[Index].Value;
+}
+
+template <typename KeyType, typename ValueType>
+ValueType& VMap<KeyType, ValueType>::FindChecked(const KeyType& Key)
 {
 	ValueType* Value = Find(Key);
 	assert(Value);
 	return *Value;
 }
 
-template <typename KeyType, typename ValueType, typename Hasher>
-const ValueType& VMap<KeyType, ValueType, Hasher>::FindChecked(const KeyType& Key) const
+template <typename KeyType, typename ValueType>
+const ValueType& VMap<KeyType, ValueType>::FindChecked(const KeyType& Key) const
 {
 	const ValueType* Value = Find(Key);
 	assert(Value);
 	return *Value;
 }
 
-template <typename KeyType, typename ValueType, typename Hasher>
-ValueType& VMap<KeyType, ValueType, Hasher>::FindOrAdd(const KeyType& Key)
+template <typename KeyType, typename ValueType>
+ValueType& VMap<KeyType, ValueType>::FindOrAdd(const KeyType& Key)
 {
-	if (ValueType* Existing = Find(Key)) return *Existing;
-	return Add(Key, ValueType());
+	if (ValueType* ExistingValue = Find(Key)) return *ExistingValue;
+	return Emplace(Key, ValueType{});
 }
 
-template <typename KeyType, typename ValueType, typename Hasher>
-ValueType& VMap<KeyType, ValueType, Hasher>::FindOrAdd(const KeyType& Key, const ValueType& DefaultValue)
+template <typename KeyType, typename ValueType>
+bool VMap<KeyType, ValueType>::TryGetValue(const KeyType& Key, ValueType*& OutValue)
 {
-	if (ValueType* Existing = Find(Key)) return *Existing;
-	return Add(Key, DefaultValue);
+	OutValue = Find(Key);
+	return OutValue;
 }
 
-template <typename KeyType, typename ValueType, typename Hasher>
-int32 VMap<KeyType, ValueType, Hasher>::Num() const
+template <typename KeyType, typename ValueType>
+bool VMap<KeyType, ValueType>::TryGetValue(const KeyType& Key, const ValueType*& OutValue) const
 {
-	return HashTable.Num();
+	OutValue = Find(Key);
+	return OutValue;
 }
 
-template <typename KeyType, typename ValueType, typename Hasher>
-int32 VMap<KeyType, ValueType, Hasher>::Max() const
+template <typename KeyType, typename ValueType>
+int32 VMap<KeyType, ValueType>::Num() const
 {
-	return HashTable.Max();
+	return Elements.Num();
 }
 
-template <typename KeyType, typename ValueType, typename Hasher>
-float32 VMap<KeyType, ValueType, Hasher>::LoadFactor() const
+template <typename KeyType, typename ValueType>
+int32 VMap<KeyType, ValueType>::Max() const
 {
-	return HashTable.LoadFactor();
+	return Elements.Max();
 }
 
-template <typename KeyType, typename ValueType, typename Hasher>
-bool VMap<KeyType, ValueType, Hasher>::IsEmpty() const
+template <typename KeyType, typename ValueType>
+bool VMap<KeyType, ValueType>::IsEmpty() const
 {
-	return HashTable.IsEmpty();
+	return Elements.IsEmpty();
 }
 
-template <typename KeyType, typename ValueType, typename Hasher>
-bool VMap<KeyType, ValueType, Hasher>::Contains(const KeyType& Key) const
+template <typename KeyType, typename ValueType>
+bool VMap<KeyType, ValueType>::Contains(const KeyType& Key) const
 {
-	return HashTable.Contains(Key);
+	return FindIndex(Key) != INDEX_NONE;
 }
 
-template <typename KeyType, typename ValueType, typename Hasher>
-ValueType& VMap<KeyType, ValueType, Hasher>::operator[](const KeyType& Key)
+template <typename KeyType, typename ValueType>
+VMap<KeyType, ValueType>& VMap<KeyType, ValueType>::operator=(VMap&& OtherMap) noexcept
+{
+	if (this == &OtherMap) return *this;
+	Elements = std::move(OtherMap.Elements);
+	NextLinks = std::move(OtherMap.NextLinks);
+	HashTable = std::move(OtherMap.HashTable);
+	return *this;
+}
+
+template <typename KeyType, typename ValueType>
+VMap<KeyType, ValueType>& VMap<KeyType, ValueType>::operator=(const VMap& OtherMap)
+{
+	if (this == &OtherMap) return *this;
+
+	Empty();
+	Reserve(OtherMap.Num());
+
+	for (const auto& Element : OtherMap.Elements)
+	{
+		Add(Element.Key, Element.Value);
+	}
+
+	return *this;
+}
+
+template <typename KeyType, typename ValueType>
+ValueType& VMap<KeyType, ValueType>::operator[](const KeyType& Key)
 {
 	return FindOrAdd(Key);
 }
 
-template <typename KeyType, typename ValueType, typename Hasher>
-const ValueType& VMap<KeyType, ValueType, Hasher>::operator[](const KeyType& Key) const
+template <typename KeyType, typename ValueType>
+const ValueType& VMap<KeyType, ValueType>::operator[](const KeyType& Key) const
 {
 	return FindChecked(Key);
 }
 
-template <typename KeyType, typename ValueType, typename Hasher>
-VMap<KeyType, ValueType, Hasher>& VMap<KeyType, ValueType, Hasher>::operator=(const VMap& OtherMap)
-{
-	if (this == &OtherMap) return *this;
+template <typename KeyType, typename ValueType>
+template <typename TKey, typename TValue>
+VMap<KeyType, ValueType>::VElement::VElement(TKey&& InKey, TValue&& InValue)
+	: Key(std::forward<TKey>(InKey)), Value(std::forward<TValue>(InValue)), Hash(VHash<KeyType>::Hash(Key))
+{}
 
-	HashTable = OtherMap.HashTable;
+template <typename KeyType, typename ValueType>
+void VMap<KeyType, ValueType>::RebuildHashTable()
+{
+	HashTable.Rehash(Elements.Max() * 2);
+
+	for (int32 Index = 0; Index < NextLinks.Num(); Index++)
+	{
+		NextLinks[Index] = INDEX_NONE;
+	}
+
+	for (Iterator Iterator = Elements.Begin(); Iterator != Elements.End(); ++Iterator)
+	{
+		const int32 Index = Iterator.GetIndex();
+		HashTable.Insert(Elements[Index].Hash, Index, NextLinks);
+	}
+}
+
+template <typename KeyType, typename ValueType>
+int32 VMap<KeyType, ValueType>::AddElement(VElement&& Element)
+{
+	const int32 Index = Elements.Emplace(std::move(Element));
+
+	if (NextLinks.Max() <= Index)
+	{
+		NextLinks.Reserve(Elements.Max());
+	}
+
+	if (NextLinks.Num() <= Index)
+	{
+		while (NextLinks.Num() <= Index)
+		{
+			NextLinks.Add(INDEX_NONE);
+		}
+	}
+
+	HashTable.Insert(NextLinks, Index, Elements[Index].Hash);
+	return Index;
+}
+
+template <typename KeyType, typename ValueType>
+int32 VMap<KeyType, ValueType>::FindIndex(const KeyType& Key) const
+{
+	if (Elements.Num() == 0) return INDEX_NONE;
+	const uint32 Hash = VHash<KeyType>::Hash(Key);
+
+	return HashTable.Find(NextLinks, [&](const int32 Index)
+		{
+			const VElement& Element = Elements[Index];
+			return Element.Hash == Hash && Element.Key == Key;
+		}, Hash);
+}
+
+template <typename KeyType, typename ValueType>
+VMap<KeyType, ValueType>::Iterator::Iterator(VMap* InOwner, const int32 InIndex)
+	: Owner(InOwner), Index(InIndex)
+{
+	Advance();
+}
+
+template <typename KeyType, typename ValueType>
+KeyType& VMap<KeyType, ValueType>::Iterator::Key() const
+{
+	return Owner->Elements[Index].Key;
+}
+
+template <typename KeyType, typename ValueType>
+ValueType& VMap<KeyType, ValueType>::Iterator::Value() const
+{
+	return Owner->Elements[Index].Value;
+}
+
+template <typename KeyType, typename ValueType>
+int32 VMap<KeyType, ValueType>::Iterator::GetIndex() const
+{
+	return Index;
+}
+
+template <typename KeyType, typename ValueType>
+VPair<KeyType&, ValueType&> VMap<KeyType, ValueType>::Iterator::operator*() const
+{
+	VElement& Element = Owner->Elements[Index];
+	return VPair(Element.Key, Element.Value);
+}
+
+template <typename KeyType, typename ValueType>
+typename VMap<KeyType, ValueType>::Iterator& VMap<KeyType, ValueType>::Iterator::operator++()
+{
+	Index++;
+	Advance();
 	return *this;
 }
 
-template <typename KeyType, typename ValueType, typename Hasher>
-VMap<KeyType, ValueType, Hasher>& VMap<KeyType, ValueType, Hasher>::operator=(VMap&& OtherMap) noexcept
+template <typename KeyType, typename ValueType>
+bool VMap<KeyType, ValueType>::Iterator::operator==(const Iterator& OtherIterator) const
 {
-	if (this == &OtherMap) return *this;
+	return Owner == OtherIterator.Owner && Index == OtherIterator.Index;
+}
 
-	HashTable = std::move(OtherMap.HashTable);
+template <typename KeyType, typename ValueType>
+bool VMap<KeyType, ValueType>::Iterator::operator!=(const Iterator& OtherIterator) const
+{
+	return !(*this == OtherIterator);
+}
+
+template <typename KeyType, typename ValueType>
+void VMap<KeyType, ValueType>::Iterator::Advance()
+{
+	while (Owner && Index < Owner->Elements.Max() && !Owner->Elements.IsValidIndex(Index))
+	{
+		Index++;
+	}
+}
+
+template <typename KeyType, typename ValueType>
+VMap<KeyType, ValueType>::ConstIterator::ConstIterator(const VMap* InOwner, const int32 InIndex)
+	: Owner(InOwner), Index(InIndex)
+{
+	Advance();
+}
+
+template <typename KeyType, typename ValueType>
+const KeyType& VMap<KeyType, ValueType>::ConstIterator::Key() const
+{
+	return Owner->Elements[Index].Key;
+}
+
+template <typename KeyType, typename ValueType>
+const ValueType& VMap<KeyType, ValueType>::ConstIterator::Value() const
+{
+	return Owner->Elements[Index].Value;
+}
+
+template <typename KeyType, typename ValueType>
+int32 VMap<KeyType, ValueType>::ConstIterator::GetIndex() const
+{
+	return Index;
+}
+
+template <typename KeyType, typename ValueType>
+VPair<const KeyType&, const ValueType&> VMap<KeyType, ValueType>::ConstIterator::operator*() const
+{
+	const VElement& Element = Owner->Elements[Index];
+	return VPair(Element.Key, Element.Value);
+}
+
+template <typename KeyType, typename ValueType>
+typename VMap<KeyType, ValueType>::ConstIterator& VMap<KeyType, ValueType>::ConstIterator::operator++()
+{
+	Index++;
+	Advance();
 	return *this;
+}
+
+template <typename KeyType, typename ValueType>
+bool VMap<KeyType, ValueType>::ConstIterator::operator==(const ConstIterator& OtherConstIterator) const
+{
+	return Owner == OtherConstIterator.Owner && Index == OtherConstIterator.Index;
+}
+
+template <typename KeyType, typename ValueType>
+bool VMap<KeyType, ValueType>::ConstIterator::operator!=(const ConstIterator& OtherConstIterator) const
+{
+	return !(*this == OtherConstIterator);
+}
+
+template <typename KeyType, typename ValueType>
+void VMap<KeyType, ValueType>::ConstIterator::Advance()
+{
+	while (Owner && Index < Owner->Elements.Max() && !Owner->Elements.IsValidIndex(Index))
+	{
+		Index++;
+	}
 }
 }

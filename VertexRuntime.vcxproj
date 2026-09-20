@@ -140,6 +140,7 @@
   <ItemGroup>
     <ClInclude Include="Runtime\Source\Core\Application\Application.h" />
     <ClInclude Include="Runtime\Source\Core\Application\Window.h" />
+    <ClInclude Include="Runtime\Source\Core\Containers\Allocator.h" />
     <ClInclude Include="Runtime\Source\Core\Containers\Array.h" />
     <ClInclude Include="Runtime\Source\Core\Containers\Array.inl" />
     <ClInclude Include="Runtime\Source\Core\Containers\Hash.h" />
@@ -148,10 +149,12 @@
     <ClInclude Include="Runtime\Source\Core\Containers\HashTable.inl" />
     <ClInclude Include="Runtime\Source\Core\Containers\Map.h" />
     <ClInclude Include="Runtime\Source\Core\Containers\Map.inl" />
-    <ClInclude Include="Runtime\Source\Core\Containers\MapIterator.h" />
-    <ClInclude Include="Runtime\Source\Core\Containers\MapIterator.inl" />
     <ClInclude Include="Runtime\Source\Core\Containers\Pair.h" />
     <ClInclude Include="Runtime\Source\Core\Containers\Pair.inl" />
+    <ClInclude Include="Runtime\Source\Core\Containers\Set.h" />
+    <ClInclude Include="Runtime\Source\Core\Containers\Set.inl" />
+    <ClInclude Include="Runtime\Source\Core\Containers\SparseArray.h" />
+    <ClInclude Include="Runtime\Source\Core\Containers\SparseArray.inl" />
     <ClInclude Include="Runtime\Source\Core\CoreAliases.h" />
     <ClInclude Include="Runtime\Source\Core\CoreMinimal.h" />
     <ClInclude Include="Runtime\Source\Core\Layers\AppLayer.h" />
@@ -180,6 +183,7 @@
     <ClInclude Include="Runtime\Source\Core\Reflection\ScriptStruct.h" />
     <ClInclude Include="Runtime\Source\Core\Reflection\Struct.h" />
     <ClInclude Include="Runtime\Source\Core\Serialization\Archive.h" />
+    <ClInclude Include="Runtime\Source\Core\Types\Name.h" />
     <ClInclude Include="Runtime\Source\Core\Types\Numeric.h" />
     <ClInclude Include="Runtime\Source\Core\Types\String.h" />
     <ClInclude Include="Runtime\Source\Math\Rotator.h" />
@@ -204,6 +208,7 @@
   <ItemGroup>
     <ClCompile Include="Runtime\Source\Core\Application\Application.cpp" />
     <ClCompile Include="Runtime\Source\Core\Application\Window.cpp" />
+    <ClCompile Include="Runtime\Source\Core\Containers\Allocator.cpp" />
     <ClCompile Include="Runtime\Source\Core\Layers\AppLayer.cpp" />
     <ClCompile Include="Runtime\Source\Core\Layers\Layer.cpp" />
     <ClCompile Include="Runtime\Source\Core\Memory\GarbageCollector.cpp" />
@@ -222,6 +227,7 @@
     <ClCompile Include="Runtime\Source\Core\Reflection\ScriptStruct.cpp" />
     <ClCompile Include="Runtime\Source\Core\Reflection\Struct.cpp" />
     <ClCompile Include="Runtime\Source\Core\Serialization\Archive.cpp" />
+    <ClCompile Include="Runtime\Source\Core\Types\Name.cpp" />
     <ClCompile Include="Runtime\Source\Core\Types\String.cpp" />
     <ClCompile Include="Runtime\Source\Math\Rotator.cpp">
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>

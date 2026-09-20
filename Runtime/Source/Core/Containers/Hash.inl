@@ -1,83 +1,95 @@
 ﻿// Vertex
 
+#pragma once
+
 namespace VCore
 {
-namespace VHashFunctions
+inline uint32 HashBytes(const void* Data, const TSize Size)
 {
-    inline VHashType HashBytes(const void* Data, const uint64 Size)
-    {
-        constexpr VHashType OffsetBasis = 14695981039346656037ull;
-        constexpr VHashType Prime = 1099511628211ull;
+	constexpr uint32 OffsetBasis = 2166136261u;
+	constexpr uint32 Prime = 16777619u;
 
-        const unsigned char* Bytes = static_cast<const unsigned char*>(Data);
-        VHashType Hash = OffsetBasis;
+	const auto* Bytes = static_cast<const uint8*>(Data);
 
-        for (uint64 Index = 0; Index < Size; Index++)
-        {
-            Hash ^= Bytes[Index];
-            Hash *= Prime;
-        }
+	uint32 Hash = OffsetBasis;
 
-        return Hash;
-    }
+	for (TSize Index = 0; Index < Size; Index++)
+	{
+		Hash ^= Bytes[Index];
+		Hash *= Prime;
+	}
 
-    inline VHashType Combine(const VHashType A, const VHashType B)
-    {
-        VHashType Hash = A;
-        Hash ^= B + 0x9e3779b97f4a7c15ull + (Hash << 6) + (Hash >> 2);
-        return Hash;
-    }
+	return Hash;
+}
+	
+inline uint32 HashCombine(const uint32 A, const uint32 B)
+{
+	return A ^ (B + 0x9e3779b9u + (A << 6) + (A >> 2));
 }
 
-template <typename KeyType>
-VHashType VHash<KeyType>::operator()(const KeyType& Key) const
+template <typename T>
+uint32 VHash<T>::Hash(const T& Value)
 {
-    static_assert(std::is_trivially_copyable_v<KeyType>, "VHash<KeyType> requires a specialization for non-trivially-copyable types.");
-    return VHashFunctions::HashBytes(&Key, sizeof(KeyType));
+	if constexpr (std::is_enum_v<T>)
+	{
+		using UnderlyingType = std::underlying_type_t<T>;
+		return VHash<UnderlyingType>::Hash(static_cast<UnderlyingType>(Value));
+	}
+	else
+	{
+		return Value.GetHash();
+	}
 }
 
-inline VHashType VHash<int32>::operator()(const int32 Key) const
+template <typename T>
+uint32 HashValue(const T& Value)
 {
-    return VHashFunctions::HashBytes(&Key, sizeof(Key));
+	return VHash<T>::Hash(Value);
 }
 
-inline VHashType VHash<uint32>::operator()(const uint32 Key) const
+template <typename T>
+uint32 VHash<T*>::Hash(T* Value)
 {
-    return VHashFunctions::HashBytes(&Key, sizeof(Key));
+	return static_cast<uint32>(reinterpret_cast<uintptr_t>(Value));
 }
 
-inline VHashType VHash<int64>::operator()(const int64 Key) const
+inline uint32 VHash<int8>::Hash(const int8 Value)
 {
-    return VHashFunctions::HashBytes(&Key, sizeof(Key));
+	return HashBytes(&Value, sizeof(Value));
 }
 
-inline VHashType VHash<uint64>::operator()(const uint64 Key) const
+inline uint32 VHash<uint8>::Hash(const uint8 Value)
 {
-    return VHashFunctions::HashBytes(&Key, sizeof(Key));
+	return HashBytes(&Value, sizeof(Value));
 }
 
-inline VHashType VHash<float32>::operator()(const float32 Key) const
+inline uint32 VHash<int16>::Hash(const int16 Value)
 {
-    return VHashFunctions::HashBytes(&Key, sizeof(Key));
+	return HashBytes(&Value, sizeof(Value));
 }
 
-inline VHashType VHash<float64>::operator()(const float64 Key) const
+inline uint32 VHash<uint16>::Hash(const uint16 Value)
 {
-    return VHashFunctions::HashBytes(&Key, sizeof(Key));
+	return HashBytes(&Value, sizeof(Value));
 }
 
-inline VHashType VHash<bool>::operator()(const bool Key) const
+inline uint32 VHash<int32>::Hash(const int32 Value)
 {
-    return Key ? 1ull : 0ull;
+	return HashBytes(&Value, sizeof(Value));
 }
 
-inline VHashType VHash<char>::operator()(const char Key) const
+inline uint32 VHash<uint32>::Hash(const uint32 Value)
 {
-    return static_cast<unsigned char>(Key);
+	return HashBytes(&Value, sizeof(Value));
 }
 
-inline VHashType VHash<VString>::operator()(const VString& Key) const
+inline uint32 VHash<int64>::Hash(const int64 Value)
 {
-    return VHashFunctions::HashBytes(Key.GetData(), Key.GetSize());
+	return HashBytes(&Value, sizeof(Value));
+}
+
+inline uint32 VHash<uint64>::Hash(const uint64 Value)
+{
+	return HashBytes(&Value, sizeof(Value));
 }
 }

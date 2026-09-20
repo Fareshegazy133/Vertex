@@ -2,77 +2,75 @@
 
 #pragma once
 
+#include <type_traits>
 #include "Core/Types/Numeric.h"
-#include "Core/Types/String.h"
 
 namespace VCore
 {
-using VHashType = uint64;
+	template<typename T>
+	uint32 HashValue(const T& Value);
 	
-namespace VHashFunctions
-{
-	VHashType HashBytes(const void* Data, const uint64 Size);
-	VHashType Combine(VHashType A, VHashType B);
-}
+	uint32 HashBytes(const void* Data, TSize Size);
+	uint32 HashCombine(const uint32 A, const uint32 B);
 
-template <typename KeyType>
+template<typename T>
 struct VHash
 {
-	VHashType operator()(const KeyType& Key) const;
+	static uint32 Hash(const T& Value);
 };
 
-template <>
+template<typename T>
+struct VHash<T*>
+{
+	static uint32 Hash(T* Value);
+};
+
+template<>
+struct VHash<int8>
+{
+	static uint32 Hash(const int8 Value);
+};
+
+template<>
+struct VHash<uint8>
+{
+	static uint32 Hash(const uint8 Value);
+};
+
+template<>
+struct VHash<int16>
+{
+	static uint32 Hash(const int16 Value);
+};
+
+template<>
+struct VHash<uint16>
+{
+	static uint32 Hash(const uint16 Value);
+};
+
+template<>
 struct VHash<int32>
 {
-	VHashType operator()(int32 Key) const;
+	static uint32 Hash(const int32 Value);
 };
 
-template <>
+template<>
 struct VHash<uint32>
 {
-	VHashType operator()(uint32 Key) const;
+	static uint32 Hash(const uint32 Value);
 };
 
-template <>
+template<>
 struct VHash<int64>
 {
-	VHashType operator()(int64 Key) const;
+	static uint32 Hash(const int64 Value);
 };
 
-template <>
+template<>
 struct VHash<uint64>
 {
-	VHashType operator()(uint64 Key) const;
-};
-
-template <>
-struct VHash<float32>
-{
-	VHashType operator()(float32 Key) const;
-};
-
-template <>
-struct VHash<float64>
-{
-	VHashType operator()(float64 Key) const;
-};
-
-template <>
-struct VHash<bool>
-{
-	VHashType operator()(bool Key) const;
-};
-
-template <>
-struct VHash<char>
-{
-	VHashType operator()(char Key) const;
-};
-
-template <>
-struct VHash<VString>
-{
-	VHashType operator()(const VString& Key) const;
+	static uint32 Hash(const uint64 Value);
 };
 }
 

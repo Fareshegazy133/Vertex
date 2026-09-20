@@ -1,5 +1,7 @@
 ﻿// Vertex
 
+#pragma once
+
 #include <strstream>
 
 namespace VCore

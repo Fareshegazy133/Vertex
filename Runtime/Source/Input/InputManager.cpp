@@ -132,16 +132,17 @@ bool VInputManager::IsMouseButtonReleased(const VMouseButtonCode& MouseButton)
 
 void VInputManager::ProcessKeyboardInputs(const VCore::float32 DeltaTime)
 {
-	ActionBindings.ForEach([DeltaTime](const VCore::VPair<const VCore::VString, VCore::VReferencePtr<VInputAction>>& Pair)
+	ActionBindings.ForEach([DeltaTime](const VCore::VString&, const VCore::VReferencePtr<VInputAction>& InputActionPtr)
 		{
-			VInputAction* InputAction = Pair.Second.Get();
+			VInputAction* InputAction = InputActionPtr.Get();
 			if (!InputAction) return;
 
 			for (auto& InputBinding : InputAction->GetInputBindings())
 			{
-				ProcessBinding(InputAction, InputBinding.First, InputBinding.Second, DeltaTime);
+				ProcessBinding(InputAction, InputBinding.FirstValue, InputBinding.SecondValue, DeltaTime);
 			}
-		});
+		}
+	);
 }
 
 void VInputManager::ProcessMouseInputs(const VCore::float32 DeltaTime)
