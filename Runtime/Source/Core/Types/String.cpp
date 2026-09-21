@@ -883,4 +883,324 @@ void VString::EnsureCapacity(const TSize RequiredCapacity)
 	const TSize NewCapacity = std::max(DoubledCapacity, RequiredCapacity);
 	Reallocate(NewCapacity);
 }
+
+VStringView::VStringView(const char* String) noexcept
+: Data(nullptr)
+{
+	if (!String)
+	{
+		Data = nullptr;
+		Size = 0;
+		return;
+	}
+
+	Data = String;
+	Size = static_cast<uint32>(std::strlen(String));
+}
+
+constexpr VStringView::VStringView(const char* String, const TSize InSize) noexcept
+	: Data(String), Size(InSize)
+{}
+
+VStringView::VStringView(const std::string& String) noexcept
+	: Data(String.data()), Size(static_cast<uint32>(String.size()))
+{}
+
+VStringView::VStringView(const std::string_view String) noexcept
+	: Data(String.data()), Size(static_cast<uint32>(String.size()))
+{}
+
+VStringView::VStringView(const VString& String) noexcept
+	: Data(String.GetData()), Size(String.GetSize())
+{}
+
+const char& VStringView::At(const uint32 Index) const
+{
+	return Data[Index];
+}
+
+const char& VStringView::Front() const
+{
+	return Data[0];
+}
+
+const char& VStringView::Back() const
+{
+	return Data[Size - 1];
+}
+
+VStringView VStringView::Substring(const TSize StartPosition, TSize Count) const noexcept
+{
+	if (StartPosition >= Size) return {};
+	const TSize Remaining = Size - StartPosition;
+
+	Count = std::min(Count, Remaining);
+	return VStringView(Data + StartPosition, Count);
+}
+
+VStringView VStringView::Left(TSize Count) const noexcept
+{
+	Count = std::min(Count, Size);
+	return VStringView(Data, Count);
+}
+
+VStringView VStringView::Right(TSize Count) const noexcept
+{
+	Count = std::min(Count, Size);
+	return VStringView(Data + (Size - Count), Count);
+}
+
+int32 VStringView::Compare(const VStringView& OtherStringView) const noexcept
+{
+	const uint32 CompareSize = std::min(Size, OtherStringView.Size);
+
+	if (CompareSize > 0)
+	{
+		const int32 Result = std::memcmp(Data, OtherStringView.Data, CompareSize);
+		if (Result < 0) return INDEX_NONE;
+		if (Result > 0) return 1;
+	}
+
+	if (Size < OtherStringView.Size) return INDEX_NONE;
+	if (Size > OtherStringView.Size) return 1;
+
+	return 0;
+}
+
+uint32 VStringView::Hash() const noexcept
+{
+	constexpr uint32 OffsetBasis = 2166136261u;
+	constexpr uint32 Prime = 16777619u;
+
+	uint32 HashValue = OffsetBasis;
+
+	for (uint32 Index = 0; Index < Size; Index++)
+	{
+		HashValue ^= static_cast<unsigned char>(Data[Index]);
+		HashValue *= Prime;
+	}
+
+	return HashValue;
+}
+
+TSize VStringView::Find(const char Character, const TSize StartPosition) const noexcept
+{
+	if (StartPosition >= Size) return INDEX_NONE;
+
+	for (TSize Index = StartPosition; Index < Size; Index++)
+	{
+		if (Data[Index] == Character) return Index;
+	}
+
+	return INDEX_NONE;
+}
+
+TSize VStringView::Find(const char* String, const TSize StartPosition) const noexcept
+{
+	if (String == nullptr) return INDEX_NONE;
+	return Find(std::string_view(String), StartPosition);
+}
+
+TSize VStringView::Find(const std::string_view String, const TSize StartPosition) const noexcept
+{
+	if (StartPosition > Size) return INDEX_NONE;
+	
+	const std::string_view View(Data, Size);
+	const TSize Result = View.find(String, StartPosition);
+	
+	if (Result == std::string_view::npos) return INDEX_NONE;
+	return static_cast<uint32>(Result);
+}
+
+TSize VStringView::Find(const VStringView& String, const TSize StartPosition) const noexcept
+{
+	return Find(std::string_view(String), StartPosition);
+}
+
+TSize VStringView::FindLast(const char Character) const noexcept
+{
+	if (Size == 0) return INDEX_NONE;
+
+	for (uint32 Index = Size; Index > 0; Index--)
+	{
+		if (Data[Index - 1] == Character) return Index - 1;
+	}
+
+	return INDEX_NONE;
+}
+
+TSize VStringView::FindLast(const char* String) const noexcept
+{
+	if (!String) return INDEX_NONE;
+	return FindLast(std::string_view(String));
+}
+
+TSize VStringView::FindLast(const std::string_view String) const noexcept
+{
+	const std::string_view View(Data, Size);
+	const TSize Result = View.rfind(String);
+
+	if (Result == std::string_view::npos) return INDEX_NONE;
+	return Result;
+}
+
+TSize VStringView::FindLast(const VStringView& String) const noexcept
+{
+	return FindLast(std::string_view(String));
+}
+
+constexpr const char* VStringView::GetData() const noexcept
+{
+	return Data;
+}
+
+constexpr TSize VStringView::GetSize() const noexcept
+{
+	return Size;
+}
+
+bool VStringView::Contains(const char Character) const noexcept
+{
+	return Find(Character) != INDEX_NONE;
+}
+
+bool VStringView::Contains(const char* String) const noexcept
+{
+	return Find(String) != INDEX_NONE;
+}
+
+bool VStringView::Contains(const std::string_view String) const noexcept
+{
+	return Find(String) != INDEX_NONE;
+}
+
+bool VStringView::Contains(const VStringView& String) const noexcept
+{
+	return Find(String) != INDEX_NONE;
+}
+
+bool VStringView::StartsWith(const char Character) const noexcept
+{
+	return Size > 0 && Data[0] == Character;
+}
+
+bool VStringView::StartsWith(const char* Prefix) const noexcept
+{
+	if (!Prefix) return false;
+	return StartsWith(std::string_view(Prefix));
+}
+
+bool VStringView::StartsWith(const std::string_view Prefix) const noexcept
+{
+	if (Prefix.size() > Size) return false;
+	return std::memcmp(Data, Prefix.data(), Prefix.size()) == 0;
+}
+
+bool VStringView::StartsWith(const VStringView& Prefix) const noexcept
+{
+	return StartsWith(std::string_view(Prefix));
+}
+
+bool VStringView::EndsWith(const char Character) const noexcept
+{
+	return Size > 0 && Data[Size - 1] == Character;
+}
+
+bool VStringView::EndsWith(const char* Suffix) const noexcept
+{
+	if (!Suffix) return false;
+	return EndsWith(std::string_view(Suffix));
+}
+
+bool VStringView::EndsWith(const std::string_view Suffix) const noexcept
+{
+	if (Suffix.size() > Size) return false;
+	return std::memcmp(Data + Size - Suffix.size(), Suffix.data(), Suffix.size()) == 0;
+}
+
+bool VStringView::EndsWith(const VStringView& Suffix) const noexcept
+{
+	return EndsWith(std::string_view(Suffix));
+}
+
+constexpr bool VStringView::IsEmpty() const noexcept
+{
+	return Size == 0;
+}
+
+constexpr bool VStringView::IsValidIndex(const uint32 Index) const noexcept
+{
+	return Index < Size;
+}
+
+bool operator==(const char* LeftString, const VStringView& RightStringView) noexcept
+{
+	return RightStringView == LeftString;
+}
+
+bool operator==(const std::string_view LeftStringView, const VStringView& RightStringView) noexcept
+{
+	return LeftStringView == std::string_view(RightStringView);
+}
+
+bool operator==(const VStringView& LeftStringView, const char* RightString) noexcept
+{
+	if (!RightString) return LeftStringView.IsEmpty();
+	return LeftStringView == std::string_view(RightString);
+}
+
+bool operator==(const VStringView& LeftStringView, const std::string_view RightStringView) noexcept
+{
+	return std::string_view(LeftStringView) == RightStringView;
+}
+
+bool operator==(const VStringView& LeftStringView, const VStringView& RightStringView) noexcept
+{
+	return LeftStringView.Compare(RightStringView) == 0;
+}
+
+bool operator!=(const char* LeftString, const VStringView& RightStringView) noexcept
+{
+	return !(LeftString == RightStringView);
+}
+
+bool operator!=(const std::string_view LeftStringView, const VStringView& RightStringView) noexcept
+{
+	return !(LeftStringView == RightStringView);
+}
+
+bool operator!=(const VStringView& LeftStringView, const char* RightString) noexcept
+{
+	return !(LeftStringView == RightString);
+}
+
+bool operator!=(const VStringView& LeftStringView, const std::string_view RightStringView) noexcept
+{
+	return !(LeftStringView == RightStringView);
+}
+
+bool operator!=(const VStringView& LeftStringView, const VStringView& RightStringView) noexcept
+{
+	return !(LeftStringView == RightStringView);
+}
+
+const char& VStringView::operator[](const uint32 Index) const noexcept
+{
+	return Data[Index];
+}
+
+VStringView::operator std::string_view() const noexcept
+{
+	return std::string_view(Data, Size);
+}
+
+VStringView MakeView(VString String)
+{
+	return VStringView(String.GetData(), String.GetSize());
+}
+
+VStringView MakeView(const VString& String)
+{
+	return VStringView(String.GetData(), String.GetSize());
+}
 }

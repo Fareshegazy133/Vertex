@@ -4,12 +4,6 @@
 
 namespace VCore
 {
-template <typename T, typename... Args>
-VUniquePtr<T> MakeUnique(Args&&... Arguments)
-{
-	return VUniquePtr(new T(std::forward<Args>(Arguments)...));
-}
-
 template <typename T>
 VUniquePtr<T>::VUniquePtr(T* InRawPtr) noexcept
 	: RawPtr(InRawPtr)
@@ -104,5 +98,11 @@ template <typename T>
 VUniquePtr<T>::operator bool() const
 {
 	return RawPtr != nullptr;
+}
+
+template <typename T, typename... Args>
+VUniquePtr<T> MakeUnique(Args&&... Arguments)
+{
+	return VUniquePtr(new T(std::forward<Args>(Arguments)...));
 }
 }

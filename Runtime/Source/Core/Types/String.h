@@ -169,4 +169,80 @@ private:
 	TSize Size = 0;
 	TSize Capacity = 0;
 };
+
+class VStringView
+{
+public:
+	constexpr VStringView() noexcept = default;
+	VStringView(const char* String) noexcept;
+	constexpr VStringView(const char* String, const TSize InSize) noexcept;
+	VStringView(const std::string& String) noexcept;
+	VStringView(const std::string_view String) noexcept;
+	VStringView(const VString& String) noexcept;
+
+	const char& At(const uint32 Index) const;
+	const char& Front() const;
+	const char& Back() const;
+	
+	VStringView Substring(const TSize StartPosition, TSize Count = INDEX_NONE) const noexcept;
+
+    VStringView Left(TSize Count) const noexcept;
+    VStringView Right(TSize Count) const noexcept;
+	
+	int32 Compare(const VStringView& OtherStringView) const noexcept;
+	uint32 Hash() const noexcept;
+
+    TSize Find(const char Character, const TSize StartPosition = 0) const noexcept;
+    TSize Find(const char* String, const TSize StartPosition = 0) const noexcept;
+    TSize Find(const std::string_view String, const TSize StartPosition = 0) const noexcept;
+    TSize Find(const VStringView& String, const TSize StartPosition = 0) const noexcept;
+	
+    TSize FindLast(const char Character) const noexcept;
+    TSize FindLast(const char* String) const noexcept;
+    TSize FindLast(const std::string_view String) const noexcept;
+    TSize FindLast(const VStringView& String) const noexcept;
+	
+	constexpr const char* GetData() const noexcept;
+	constexpr TSize GetSize() const noexcept;
+	
+	bool Contains(const char Character) const noexcept;
+	bool Contains(const char* String) const noexcept;
+	bool Contains(const std::string_view String) const noexcept;
+	bool Contains(const VStringView& String) const noexcept;
+
+	bool StartsWith(const char Character) const noexcept;
+	bool StartsWith(const char* Prefix) const noexcept;
+	bool StartsWith(const std::string_view Prefix) const noexcept;
+	bool StartsWith(const VStringView& Prefix) const noexcept;
+
+	bool EndsWith(const char Character) const noexcept;
+	bool EndsWith(const char* Suffix) const noexcept;
+	bool EndsWith(const std::string_view Suffix) const noexcept;
+	bool EndsWith(const VStringView& Suffix) const noexcept;
+
+	constexpr bool IsEmpty() const noexcept;
+	constexpr bool IsValidIndex(const uint32 Index) const noexcept;
+
+	friend bool operator==(const char* LeftString, const VStringView& RightStringView) noexcept;
+	friend bool operator==(const std::string_view LeftStringView, const VStringView& RightStringView) noexcept;
+	friend bool operator==(const VStringView& LeftStringView, const char* RightString) noexcept;
+	friend bool operator==(const VStringView& LeftStringView, const std::string_view RightStringView) noexcept;
+    friend bool operator==(const VStringView& LeftStringView, const VStringView& RightStringView) noexcept;
+	
+	friend bool operator!=(const char* LeftString, const VStringView& RightStringView) noexcept;
+	friend bool operator!=(const std::string_view LeftStringView, const VStringView& RightStringView) noexcept;
+	friend bool operator!=(const VStringView& LeftStringView, const char* RightString) noexcept;
+	friend bool operator!=(const VStringView& LeftStringView, const std::string_view RightStringView) noexcept;
+	friend bool operator!=(const VStringView& LeftStringView, const VStringView& RightStringView) noexcept;
+	
+	const char& operator[](const uint32 Index) const noexcept;
+	operator std::string_view() const noexcept;
+	
+private:
+	const char* Data;
+	TSize Size = 0;
+};
+
+VStringView MakeView(VString String);
+VStringView MakeView(const VString& String);
 }

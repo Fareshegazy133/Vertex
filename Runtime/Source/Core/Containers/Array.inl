@@ -588,4 +588,122 @@ void VArray<ElementType>::Relocate(const int32 NewCapacity)
 	Data = NewData;
 	Capacity = NewCapacity;
 }
+
+template <typename ElementType>
+constexpr VArrayView<ElementType>::VArrayView(ElementType* InData, const int32 InSize) noexcept
+	: Data(InData), Size(InSize)
+{}
+
+template <typename ElementType>
+void VArrayView<ElementType>::Reset() noexcept
+{
+	Data = nullptr;
+	Size = 0;
+}
+
+template <typename ElementType>
+VArrayView<ElementType> VArrayView<ElementType>::Slice(const int32 StartIndex, int32 Elements) const noexcept
+{
+	if (StartIndex < 0 || StartIndex >= Size) return VArrayView();
+	Elements = std::min(Elements, Size - StartIndex);
+	return VArrayView(Data + StartIndex, Elements);
+}
+
+template <typename ElementType>
+constexpr int32 VArrayView<ElementType>::Num() const noexcept
+{
+	return Size;
+}
+
+template <typename ElementType>
+constexpr ElementType* VArrayView<ElementType>::GetData() const noexcept
+{
+	return Data;
+}
+
+template <typename ElementType>
+ElementType& VArrayView<ElementType>::At(const int32 ArrayIndex) const
+{
+	return Data[ArrayIndex];
+}
+
+template <typename ElementType>
+ElementType& VArrayView<ElementType>::Front() const
+{
+	return Data[0];
+}
+
+template <typename ElementType>
+ElementType& VArrayView<ElementType>::Back() const
+{
+	return Data[Size - 1];
+}
+
+template <typename ElementType>
+ElementType* VArrayView<ElementType>::Begin() const noexcept
+{
+	return Data;
+}
+
+template <typename ElementType>
+ElementType* VArrayView<ElementType>::begin() const noexcept
+{
+	return Data;
+}
+
+template <typename ElementType>
+ElementType* VArrayView<ElementType>::End() const noexcept
+{
+	return Data + Size;
+}
+
+template <typename ElementType>
+ElementType* VArrayView<ElementType>::end() const noexcept
+{
+	return Data + Size;
+}
+
+template <typename ElementType>
+VArrayView<ElementType> VArrayView<ElementType>::Left(int32 Elements) const noexcept
+{
+	Elements = std::min(Elements, Size);
+	return VArrayView(Data, Elements);
+}
+
+template <typename ElementType>
+VArrayView<ElementType> VArrayView<ElementType>::Right(int32 Elements) const noexcept
+{
+	Elements = std::min(Elements, Size);
+	return VArrayView(Data + Size - Elements, Elements);
+}
+
+template <typename ElementType>
+constexpr bool VArrayView<ElementType>::IsEmpty() const noexcept
+{
+	return Size == 0;
+}
+
+template <typename ElementType>
+constexpr bool VArrayView<ElementType>::IsValidIndex(const int32 ArrayIndex) const noexcept
+{
+	return ArrayIndex >= 0 && ArrayIndex < Size;
+}
+
+template <typename ElementType>
+ElementType& VArrayView<ElementType>::operator[](const int32 ArrayIndex) const noexcept
+{
+	return Data[ArrayIndex];
+}
+
+template <typename ElementType>
+VArrayView<ElementType> MakeView(const VArray<ElementType>& Array)
+{
+	return VArrayView<ElementType>(Array.GetData(), Array.Num());
+}
+
+template <typename ElementType>
+VConstArrayView<ElementType> MakeView(const VArray<ElementType>& Array)
+{
+	return VArrayView<ElementType>(Array.GetData(), Array.Num());
+}
 }

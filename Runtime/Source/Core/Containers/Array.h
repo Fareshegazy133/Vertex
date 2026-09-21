@@ -120,6 +120,51 @@ private:
 	int32 Indices = 0;
 	int32 Capacity = 0;
 };
+
+template<typename ElementType>
+class VArrayView
+{
+public:
+	constexpr VArrayView() noexcept = default;
+	constexpr VArrayView(ElementType* InData, const int32 InSize) noexcept;
+	
+	void Reset() noexcept;
+	VArrayView Slice(const int32 StartIndex, int32 Elements) const noexcept;
+	
+    constexpr int32 Num() const noexcept;
+	constexpr ElementType* GetData() const noexcept;
+	
+	ElementType& At(const int32 ArrayIndex) const;
+	ElementType& Front() const;
+	ElementType& Back() const;
+	
+	ElementType* Begin() const noexcept;
+	ElementType* begin() const noexcept;
+	
+	ElementType* End() const noexcept;
+	ElementType* end() const noexcept;
+	
+    VArrayView Left(int32 Elements) const noexcept;
+    VArrayView Right(int32 Elements) const noexcept;
+	
+	constexpr bool IsEmpty() const noexcept;
+	constexpr bool IsValidIndex(const int32 ArrayIndex) const noexcept;
+
+	ElementType& operator[](const int32 ArrayIndex) const noexcept;
+
+private:
+    ElementType* Data;
+    int32 Size = 0;
+};
+
+template <typename ElementType>
+using VConstArrayView = VArrayView<const ElementType>;
+
+template <typename ElementType>
+VArrayView<ElementType> MakeView(const VArray<ElementType>& Array);
+
+template <typename ElementType>
+VConstArrayView<ElementType> MakeView(const VArray<ElementType>& Array);
 }
 
 #include "Core/Containers/Array.inl"

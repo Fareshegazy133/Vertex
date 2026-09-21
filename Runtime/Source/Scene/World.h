@@ -10,7 +10,7 @@ class VWorld : public VObject
 {
 public:
 	VWorld() = default;
-	~VWorld() override = default;
+	virtual ~VWorld() override = default;
 	
 	void Update(const float32 DeltaTime);
 	

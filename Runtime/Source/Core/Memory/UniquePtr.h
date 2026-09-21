@@ -43,6 +43,9 @@ private:
 	
 	T* RawPtr = nullptr;
 };
+
+template <typename T, typename... Args>
+VUniquePtr<T> MakeUnique(Args&&... Arguments);
 }
 
 #include "Core/Memory/UniquePtr.inl"
