@@ -44,11 +44,12 @@ void VClass::AddFunction(VFunction* Function)
 
 VFunction* VClass::FindFunction(const VName& FunctionName) const
 {
-	if (!FunctionName.IsValid()) return nullptr;
+	VFunction* Function = Functions;
 
-	for (VFunction* Function = Functions; Function; Function = dynamic_cast<VFunction*>(Function->GetNextField()))
+	while (Function)
 	{
 		if (Function->GetName() == FunctionName) return Function;
+		Function = dynamic_cast<VFunction*>(Function->GetNextField());
 	}
 
 	if (ParentClass) return ParentClass->FindFunction(FunctionName);

@@ -2,6 +2,7 @@
 
 #include "Core/Object/Object.h"
 
+#include "Core/Memory/ObjectManager.h"
 #include "Core/Reflection/Class.h"
 
 namespace VCore
@@ -53,7 +54,7 @@ bool VObject::HasAllObjectFlags(EVObjectFlags InObjectFlags) const
 
 void VObject::MarkPendingKill()
 {
-	AddFlags(EVObjectFlags::PendingKill);
+	VObjectManager::Get().MarkPendingKill(this);
 }
 
 void VObject::SetOuter(VObject* InOuter)

@@ -19,7 +19,7 @@ public:
 	
 	static VObject* FindObject(const VClass* Class, const VObject* Outer, const VName& Name);
 	static VObject* FindObjectByName(const VName& Name);
-	static VObject* FindObjectByPath(const VName& Path);
+	static VObject* FindObjectByPath(const VString& Path);
 	
 	static bool IsValid(const VObject* Object);
 };

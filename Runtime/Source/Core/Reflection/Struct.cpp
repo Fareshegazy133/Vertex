@@ -61,11 +61,12 @@ void VStruct::SetStructAlignment(const TSize InStructAlignment)
 
 VProperty* VStruct::FindProperty(const VName& PropertyName) const
 {
-	if (!PropertyName.IsValid()) return nullptr;
+	VProperty* Property = Properties;
 
-	for (VProperty* Property = Properties; Property; Property = dynamic_cast<VProperty*>(Property->GetNextField()))
+	while (Property)
 	{
 		if (Property->GetName() == PropertyName) return Property;
+		Property = dynamic_cast<VProperty*>(Property->GetNextField());
 	}
 
 	if (ParentStruct) return ParentStruct->FindProperty(PropertyName);

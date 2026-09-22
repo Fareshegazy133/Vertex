@@ -2,6 +2,8 @@
 
 #include "Core/Memory/ObjectManager.h"
 
+#include "Core/Reflection/Class.h"
+
 namespace VCore
 {
 VObjectManager& VObjectManager::Get()
@@ -29,6 +31,19 @@ void VObjectManager::Shutdown()
 void VObjectManager::Tick()
 {
 	ProcessDeferredDestruction();
+}
+
+VObject* VObjectManager::CreateObject(const VClass* Class, VObject* Outer, const VName& Name)
+{
+	if (!Class) return nullptr;
+	VObject* Object = Class->CreateObject(Outer, Name);
+
+	if (!Object) return nullptr;
+	VObjectEntry ObjectEntry;
+	ObjectEntry.Object = VUniquePtr(Object);
+	
+	ObjectEntries.Add(std::move(ObjectEntry));
+	return Object;
 }
 
 void VObjectManager::DestroyObject(const VObjectHandle& ObjectHandle)
@@ -66,13 +81,12 @@ void VObjectManager::UnregisterObject(const VObject* Object)
 void VObjectManager::MarkPendingKill(VObject* Object)
 {
 	if (!Object) return;
-	const VObjectHandle Handle = FindHandle(Object);
+	const VObjectHandle ObjectHandle = FindHandle(Object);
 	
-	if (!Handle.IsValid()) return;
-	VObjectEntry& ObjectEntry = ObjectEntries[Handle.Index];
+	if (!ObjectHandle.IsValid()) return;
+	if (Object->IsPendingKill()) return;
 
-	if (ObjectEntry.bIsPendingKill) return;
-	ObjectEntry.bIsPendingKill = true;
+	Object->AddFlags(EVObjectFlags::PendingKill);
 	PendingKillObjects.Add(Object);
 }
 
@@ -81,16 +95,18 @@ void VObjectManager::CollectPendingKill()
 	for (const auto& PendingKillObject : PendingKillObjects)
 	{
 		if (!PendingKillObject) continue;
-		const VObjectHandle Handle = FindHandle(PendingKillObject);
+		const VObjectHandle ObjectHandle = FindHandle(PendingKillObject);
 
-		if (!Handle.IsValid()) continue;
+		if (!ObjectHandle.IsValid()) continue;
 
-		VObjectEntry& ObjectEntry = ObjectEntries[Handle.Index];
+		VObjectEntry& ObjectEntry = ObjectEntries[ObjectHandle.Index];
 		ObjectEntry.Object.Reset();
-		ObjectEntry.bIsPendingKill = false;
-
 		ObjectEntry.Generation++;
-		if (ObjectEntry.Generation <= 0) ObjectEntry.Generation = 1;
+		
+		if (ObjectEntry.Generation <= 0)
+		{
+			ObjectEntry.Generation = 1;
+		}
 	}
 
 	PendingKillObjects.Empty();
@@ -142,7 +158,7 @@ VObject* VObjectManager::FindObject(const VName& ObjectName)
 	{
 		const VObjectEntry& ObjectEntry = ObjectEntries[Index];
 		if (!ObjectEntry.Object) continue;
-		if (ObjectEntry.bIsPendingKill) continue;
+		if (ObjectEntry.Object->IsPendingKill()) continue;
 
 		if (ObjectEntry.Object->GetName() == ObjectName)
 		{
@@ -159,8 +175,9 @@ VObject* VObjectManager::FindObject(const VClass* Class, const VObject* Outer, c
 	{
 		VObjectEntry& ObjectEntry = ObjectEntries[Index];
 		if (!ObjectEntry.Object) continue;
-		if (ObjectEntry.bIsPendingKill) continue;
+		
 		VObject* Object = ObjectEntry.Object.Get();
+		if (Object->IsPendingKill()) continue;
 		
 		if (Class && !Object->IsA(Class)) continue;
 		if (Object->GetOuter() != Outer) continue;
@@ -177,9 +194,9 @@ VObject* VObjectManager::FindObjectByPath(const VString& Path)
 	{
 		VObjectEntry& ObjectEntry = ObjectEntries[Index];
 		if (!ObjectEntry.Object) continue;
-		if (ObjectEntry.bIsPendingKill) continue;
 
 		VObject* Object = ObjectEntry.Object.Get();
+		if (Object->IsPendingKill()) continue;
 		if (Object->GetPathName() == Path) return Object;
 	}
 
@@ -198,7 +215,9 @@ const VObject* VObjectManager::FindObject(const VName& ObjectName) const
 	{
 		const VObjectEntry& ObjectEntry = ObjectEntries[Index];
 		if (!ObjectEntry.Object) continue;
-		if (ObjectEntry.bIsPendingKill) continue;
+		
+		const VObject* Object = ObjectEntry.Object.Get();
+		if (Object->IsPendingKill()) continue;
 
 		if (ObjectEntry.Object->GetName() == ObjectName)
 		{
@@ -219,7 +238,7 @@ VArray<VObject*> VObjectManager::GetObjects(const VClass* Class)
 		VObjectEntry& ObjectEntry = ObjectEntries[Index];
 		if (!ObjectEntry.Object) continue;
 
-		if (ObjectEntry.bIsPendingKill)continue;
+		if (ObjectEntry.Object->IsPendingKill()) continue;
 		VObject* Object = ObjectEntry.Object.Get();
 
 		if (Object->IsA(Class))
@@ -241,8 +260,8 @@ VArray<const VObject*> VObjectManager::GetObjects(const VClass* Class) const
 		const VObjectEntry& ObjectEntry = ObjectEntries[Index];
 		if (!ObjectEntry.Object) continue;
 		
-		if (ObjectEntry.bIsPendingKill) continue;
 		const VObject* Object = ObjectEntry.Object.Get();
+		if (Object->IsPendingKill()) continue;
 
 		if (Object->IsA(Class))
 		{
@@ -285,7 +304,7 @@ int32 VObjectManager::GetObjectCount() const
 
 	for (const auto& ObjectEntry : ObjectEntries)
 	{
-		if (ObjectEntry.Object && !ObjectEntry.bIsPendingKill)
+		if (ObjectEntry.Object && !ObjectEntry.Object->IsPendingKill())
 		{
 			CountResult++;
 		}
@@ -323,7 +342,7 @@ bool VObjectManager::IsValid(const VObjectHandle& ObjectHandle) const
 	
 	const VObjectEntry& ObjectEntry = ObjectEntries[ObjectHandle.Index];
 	if (!ObjectEntry.Object) return false;
-	if (ObjectEntry.bIsPendingKill) return false;
+	if (ObjectEntry.Object->IsPendingKill()) return false;
 	return ObjectEntry.Generation == ObjectHandle.Generation;
 }
 
@@ -331,5 +350,11 @@ VObjectManager& GetObjectManager()
 {
 	static VObjectManager ObjectManager;
 	return ObjectManager;
+}
+
+VObject* NewObject(const VClass* Class, VObject* Outer, const VName& Name)
+{
+	if (!Class) return nullptr;
+	return VObjectManager::Get().CreateObject(Class, Outer, Name);
 }
 }

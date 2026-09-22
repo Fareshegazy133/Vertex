@@ -13,6 +13,7 @@ namespace VCore
 {
 template<typename T>
 class VObjectPtr;
+class VClass;
 
 class VObjectManager
 {
@@ -22,8 +23,11 @@ public:
 	VObjectManager(VObjectManager&&) = delete;
 	~VObjectManager() = default;
 
-	template<typename T, typename... Args>
-	VObjectPtr<T> CreateObject(Args&&... Arguments);
+	template<typename T, typename... TArgs>
+	VObjectPtr<T> CreateObject(TArgs&&... Arguments);
+	
+	template<typename T, typename... TArgs>
+	VObjectPtr<T> CreateObject(VObject* Outer, const VName& Name, TArgs&&... Arguments);
 
 	template<typename T>
 	T* GetObject(const VObjectHandle& ObjectHandle);
@@ -36,6 +40,8 @@ public:
 	void Initialize();
 	void Shutdown();
 	void Tick();
+	
+	VObject* CreateObject(const VClass* Class, VObject* Outer, const VName& Name);
 	
 	void DestroyObject(const VObjectHandle& ObjectHandle);
 	void DestroyObject(VObject* Object);
@@ -78,7 +84,6 @@ private:
 	{
 		VUniquePtr<VObject> Object;
 		int32 Generation = 1;
-		bool bIsPendingKill = false;
 	};
 
 private:
@@ -88,13 +93,32 @@ private:
 	bool bIsInitialized = false;
 };
 
-template <typename T, typename ... Args>
-VObjectPtr<T> VObjectManager::CreateObject(Args&&... Arguments)
+template <typename T, typename... TArgs>
+VObjectPtr<T> VObjectManager::CreateObject(TArgs&&... Arguments)
 {
 	static_assert(std::is_base_of_v<VObject, T>, "T must derive from VObject.");
 
 	VObjectEntry ObjectEntry;
-	ObjectEntry.Object = MakeUnique<T>(std::forward<Args>(Arguments)...);
+	ObjectEntry.Object = MakeUnique<T>(std::forward<TArgs>(Arguments)...);
+
+	const int32 ArrayIndex = ObjectEntries.Num();
+	ObjectEntries.Add(std::move(ObjectEntry));
+
+	const VObjectHandle ObjectHandle(ArrayIndex, ObjectEntries[ArrayIndex].Generation);
+	return VObjectPtr<T>(this, ObjectHandle);
+}
+
+template <typename T, typename ... TArgs>
+VObjectPtr<T> VObjectManager::CreateObject(VObject* Outer, const VName& Name, TArgs&&... Arguments)
+{
+	static_assert(std::is_base_of_v<VObject, T>, "T must derive from VObject.");
+
+	VObjectEntry ObjectEntry;
+	ObjectEntry.Object = MakeUnique<T>(std::forward<TArgs>(Arguments)...);
+
+	T* Object = static_cast<T*>(ObjectEntry.Object.Get());
+	Object->SetOuter(Outer);
+	Object->SetName(Name);
 
 	const int32 ArrayIndex = ObjectEntries.Num();
 	ObjectEntries.Add(std::move(ObjectEntry));
@@ -119,5 +143,13 @@ const T* VObjectManager::GetObject(const VObjectHandle& ObjectHandle) const
 	return static_cast<const T*>(ObjectEntries[ObjectHandle.Index].Object.Get());
 }
 
+template<typename T, typename... TArgs>
+T* NewObject(VObject* Outer = nullptr, const VName& Name = NAME_None, TArgs&&... Arguments)
+{
+	static_assert(std::is_base_of_v<VObject, T>, "NewObject<T>: T must derive from VObject.");
+	return VObjectManager::Get().CreateObject<T>(Outer, Name, std::forward<TArgs>(Arguments)...).Get();
+}
+
 VObjectManager& GetObjectManager();
+VObject* NewObject(const VClass* Class, VObject* Outer = nullptr, const VName& Name = NAME_None);
 }

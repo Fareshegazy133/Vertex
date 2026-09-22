@@ -34,9 +34,9 @@ VObject* VObjectBaseUtility::FindObjectByName(const VName& Name)
 	return VObjectManager::Get().FindObject(Name);
 }
 
-VObject* VObjectBaseUtility::FindObjectByPath(const VName& Path)
+VObject* VObjectBaseUtility::FindObjectByPath(const VString& Path)
 {
-	return VObjectManager::Get().FindObject(Path);
+	return VObjectManager::Get().FindObjectByPath(Path);
 }
 
 bool VObjectBaseUtility::IsValid(const VObject* Object)

@@ -10,11 +10,11 @@ template<typename T, EVPropertyType PropertyType>
 class VNumericProperty : public VProperty
 {
 public:
-	virtual void SetValue(VObject* Object, const void* Value) const override;
+	virtual void SetValue(void* Container, const void* Value) const override;
 
 	virtual void GetValue(const VObject* Object, void* OutValue) const override;
-	virtual void* GetValuePtr(VObject* Object) const override;
-	virtual const void* GetValuePtr(const VObject* Object) const override;
+	virtual void* GetValuePtr(void* Container) const override;
+	virtual const void* GetValuePtr(const void* Container) const override;
 	
 	virtual EVPropertyType GetPropertyType() const override;
 	
@@ -23,9 +23,9 @@ public:
 };
 
 template <typename T, EVPropertyType PropertyType>
-void VNumericProperty<T, PropertyType>::SetValue(VObject* Object, const void* Value) const
+void VNumericProperty<T, PropertyType>::SetValue(void* Container, const void* Value) const
 {
-	*reinterpret_cast<T*>(reinterpret_cast<char*>(Object) + Offset) = *static_cast<const T*>(Value);
+	*reinterpret_cast<T*>(static_cast<char*>(Container) + Offset) = *static_cast<const T*>(Value);
 }
 
 template <typename T, EVPropertyType PropertyType>
@@ -35,15 +35,15 @@ void VNumericProperty<T, PropertyType>::GetValue(const VObject* Object, void* Ou
 }
 
 template <typename T, EVPropertyType PropertyType>
-void* VNumericProperty<T, PropertyType>::GetValuePtr(VObject* Object) const
+void* VNumericProperty<T, PropertyType>::GetValuePtr(void* Container) const
 {
-	return reinterpret_cast<char*>(Object) + Offset;
+	return static_cast<char*>(Container) + Offset;
 }
 
 template <typename T, EVPropertyType PropertyType>
-const void* VNumericProperty<T, PropertyType>::GetValuePtr(const VObject* Object) const
+const void* VNumericProperty<T, PropertyType>::GetValuePtr(const void* Container) const
 {
-	return reinterpret_cast<const char*>(Object) + Offset;
+	return static_cast<const char*>(Container) + Offset;
 }
 
 template <typename T, EVPropertyType PropertyType>

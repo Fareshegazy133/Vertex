@@ -5,18 +5,21 @@
 #include "Core/CoreAliases.h"
 #include "Core/Object/ObjectBase.h"
 #include "Core/Object/ObjectFlags.h"
+#include "Core/Reflection/Property.h"
 #include "Core/Types/Name.h"
 
 namespace VCore
 {
 class VClass;
-class VObject;
 
 class VObject : public VObjectBase
 {
 public:
 	VObject();
 	virtual ~VObject() override = default;
+
+	template<typename T>
+	T& GetPropertyValue(VObject* Object, VProperty* Property);
 
 	virtual VClass* GetClass() const override;
 	static VClass* StaticClass();
@@ -48,4 +51,10 @@ private:
 	EVObjectFlags ObjectFlags;
 	VName Name = NAME_None;
 };
+
+template<typename T>
+T& VObject::GetPropertyValue(VObject* Object, VProperty* Property)
+{
+	return *static_cast<T*>(Property->GetValuePtr(Object));
+}
 }

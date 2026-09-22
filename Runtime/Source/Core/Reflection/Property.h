@@ -23,9 +23,13 @@ enum class EVPropertyType
 	Float32,
 	Float64,
 	String,
+	Name,
 	Object,
 	Struct,
-	Array
+	Enum,
+	Array,
+	Map,
+	Set
 };
 
 class VProperty : public VField
@@ -34,19 +38,19 @@ public:
 	VProperty() = default;
 	virtual ~VProperty() override = default;
 	
-	virtual void SetValue(VObject* Object, const void* Value) const = 0;
+	virtual void SetValue(void* Container, const void* Value) const = 0;
 	
-	void SetOffset(const TSize InOffset);
-	void SetIsEditable(const bool IsEditable);
-	
-	virtual void GetValue(const VObject* Object, void* OutValue) const = 0;
-	virtual void* GetValuePtr(VObject* Object) const = 0;
-	virtual const void* GetValuePtr(const VObject* Object) const = 0;
+	virtual void GetValue(const void* Container, void* OutValue) const = 0;
+	virtual void* GetValuePtr(void* Container) const = 0;
+	virtual const void* GetValuePtr(const void* Container) const = 0;
 	
 	virtual EVPropertyType GetPropertyType() const = 0;
 	
 	virtual TSize GetSize() const = 0;
 	virtual TSize GetAlignment() const = 0;
+	
+	void SetOffset(const TSize InOffset);
+	void SetIsEditable(const bool IsEditable);
 
 	TSize GetOffset() const;
 	bool IsEditable() const;
