@@ -2,6 +2,7 @@
 
 #include "Core/Types/String.h"
 
+#include <format>
 #include <ostream>
 #include <stdexcept>
 #include "Core/Containers/Hash.h"
@@ -101,6 +102,66 @@ VString::~VString()
 {
 	delete[] Data;
 	Data = nullptr;
+}
+
+VString VString::FromInt8(const int8 Value)
+{
+	return VString(std::to_string(Value));
+}
+
+VString VString::FromUInt8(const uint8 Value)
+{
+	return VString(std::to_string(Value));
+}
+
+VString VString::FromInt16(const int16 Value)
+{
+	return VString(std::to_string(Value));
+}
+
+VString VString::FromUInt16(const uint16 Value)
+{
+	return VString(std::to_string(Value));
+}
+
+VString VString::FromInt32(const int32 Value)
+{
+	return VString(std::to_string(Value));
+}
+
+VString VString::FromUInt32(const uint32 Value)
+{
+	return VString(std::to_string(Value));
+}
+
+VString VString::FromInt64(const int64 Value)
+{
+	return VString(std::to_string(Value));
+}
+
+VString VString::FromUInt64(const uint64 Value)
+{
+	return VString(std::to_string(Value));
+}
+
+VString VString::FromFloat32(const float32 Value)
+{
+	return VString(std::format("{}", Value));
+}
+
+VString VString::FromFloat64(const float64 Value)
+{
+	return VString(std::format("{}", Value));
+}
+
+VString VString::FromChar(const char Character)
+{
+	return VString(&Character, 1);
+}
+
+VString VString::FromBool(const bool Value)
+{
+	return Value ? VString("true") : VString("false");
 }
 
 void VString::Reserve(const TSize NewCapacity)
@@ -851,7 +912,7 @@ std::ostream& operator<<(std::ostream& Stream, const VString& String)
 
 void VString::Allocate(const TSize NewCapacity)
 {
-	Data = new char[static_cast<std::size_t>(NewCapacity) + 1];
+	Data = new char[static_cast<TSize>(NewCapacity) + 1];
 	Capacity = NewCapacity;
 	Size = 0;
 	Data[0] = '\0';

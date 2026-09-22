@@ -11,7 +11,7 @@ class VProperty;
 class VStruct : public VField
 {
 public:
-	VStruct(VStruct* InParentStruct = nullptr, const VString& InName = VString::NullString, const TSize InSize = 0);
+	VStruct(VStruct* InParentStruct = nullptr, const VName& InName = NAME_None, const TSize InSize = 0);
 	virtual ~VStruct() override;
 	
 	virtual void Initialize(void* Data) const;
@@ -23,7 +23,7 @@ public:
 	void SetStructSize(const TSize InStructSize);
 	void SetStructAlignment(const TSize InStructAlignment);
 	
-	VProperty* FindProperty(const VString& PropertyName) const;
+	VProperty* FindProperty(const VName& PropertyName) const;
 	
 	VStruct* GetParentStruct() const;
 	VProperty* GetProperties() const;

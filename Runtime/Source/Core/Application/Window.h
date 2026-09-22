@@ -2,14 +2,14 @@
 
 #pragma once
 
+#include "Core/Types/Name.h"
 #include "Core/Types/Numeric.h"
-#include "Core/Types/String.h"
 
 namespace VCore
 {
 struct VWindowSpecification
 {
-	VString WindowName;
+	VName WindowName;
 	
 	uint16 Width = 1280;
 	uint16 Height = 720;

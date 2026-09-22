@@ -6,7 +6,7 @@
 
 namespace VCore
 {
-VStruct::VStruct(VStruct* InParentStruct, const VString& InName, const TSize InSize)
+VStruct::VStruct(VStruct* InParentStruct, const VName& InName, const TSize InSize)
 	: ParentStruct(InParentStruct), Properties(nullptr), StructAlignment(1), StructSize(InSize)
 {
 	FieldName = InName;
@@ -59,13 +59,13 @@ void VStruct::SetStructAlignment(const TSize InStructAlignment)
 	StructAlignment = InStructAlignment;
 }
 
-VProperty* VStruct::FindProperty(const VString& PropertyName) const
+VProperty* VStruct::FindProperty(const VName& PropertyName) const
 {
-	if (!PropertyName) return nullptr;
+	if (!PropertyName.IsValid()) return nullptr;
 
 	for (VProperty* Property = Properties; Property; Property = dynamic_cast<VProperty*>(Property->GetNextField()))
 	{
-		if (Property->GetName() && std::strcmp(Property->GetName(), PropertyName) == 0) return Property;
+		if (Property->GetName() == PropertyName) return Property;
 	}
 
 	if (ParentStruct) return ParentStruct->FindProperty(PropertyName);

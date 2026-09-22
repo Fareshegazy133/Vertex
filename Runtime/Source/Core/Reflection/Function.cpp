@@ -4,7 +4,7 @@
 
 namespace VCore
 {
-VFunction::VFunction(const VNativeFunction InInvoker, const VString& InName)
+VFunction::VFunction(const VNativeFunction InInvoker, const VName& InName)
 	: Invoker(InInvoker), ParameterStruct(nullptr), ReturnProperty(nullptr)
 {
 	FieldName = InName;

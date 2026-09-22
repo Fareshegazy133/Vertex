@@ -6,7 +6,7 @@
 
 namespace VCore
 {
-VClass::VClass(VClass* InParentClass, const VString& InName, const TSize ClassSize)
+VClass::VClass(VClass* InParentClass, const VName& InName, const TSize ClassSize)
 	: VStruct(InParentClass, InName, ClassSize), ParentClass(InParentClass), Constructor(nullptr), Functions(nullptr)
 {}
 
@@ -23,7 +23,7 @@ VClass::~VClass()
 	}
 }
 
-VObject* VClass::CreateObject(VObject* Owner, const VString& InName) const
+VObject* VClass::CreateObject(VObject* Owner, const VName& InName) const
 {
 	if (!Constructor) return nullptr;
 	return Constructor(Owner, InName);
@@ -42,13 +42,13 @@ void VClass::AddFunction(VFunction* Function)
 	Functions = Function;
 }
 
-VFunction* VClass::FindFunction(const VString& FunctionName) const
+VFunction* VClass::FindFunction(const VName& FunctionName) const
 {
-	if (!FunctionName) return nullptr;
+	if (!FunctionName.IsValid()) return nullptr;
 
 	for (VFunction* Function = Functions; Function; Function = dynamic_cast<VFunction*>(Function->GetNextField()))
 	{
-		if (Function->GetName() && std::strcmp(Function->GetName(), FunctionName) == 0) return Function;
+		if (Function->GetName() == FunctionName) return Function;
 	}
 
 	if (ParentClass) return ParentClass->FindFunction(FunctionName);

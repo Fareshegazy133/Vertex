@@ -12,9 +12,9 @@ class VAppLayer : public VLayer
 {
 public:
 	VAppLayer();
-	
-	void Update(const float32 DeltaTime) override;
-	void Render(VRenderCore::VRenderer* Renderer) override;
+
+	virtual void Update(const float32 DeltaTime) override;
+	virtual void Render(VRenderCore::VRenderer* Renderer) override;
 	
 	
 };

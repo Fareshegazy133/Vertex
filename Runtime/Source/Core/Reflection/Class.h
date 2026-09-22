@@ -3,27 +3,26 @@
 #pragma once
 
 #include "Core/Reflection/Struct.h"
-#include "Core/Types/String.h"
 
 namespace VCore
 {
 class VObject;
 class VFunction;
 
-using VObjectConstructor = VObject* (*)(VObject* Owner, VString Name);
+using VObjectConstructor = VObject* (*)(VObject* Owner, VName Name);
 
 class VClass : public VStruct
 {
 public:
-	VClass(VClass* InParentClass = nullptr, const VString& InName = VString::NullString, const TSize ClassSize = 0);
+	VClass(VClass* InParentClass = nullptr, const VName& InName = NAME_None, const TSize ClassSize = 0);
 	virtual ~VClass() override;
 
-	virtual VObject* CreateObject(VObject* Owner, const VString& InName) const;
+	virtual VObject* CreateObject(VObject* Owner, const VName& InName) const;
 
 	void SetConstructor(const VObjectConstructor InConstructor);
 	void AddFunction(VFunction* Function);
 
-	VFunction* FindFunction(const VString& FunctionName) const;
+	VFunction* FindFunction(const VName& FunctionName) const;
 	
 	VObjectConstructor GetConstructor() const;
 	VClass* GetParentClass() const;

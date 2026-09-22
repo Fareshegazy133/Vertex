@@ -99,6 +99,8 @@ private:
 	mutable std::mutex Mutex;
 };
 	
-	VNameRegistry& GetNameRegistry();
-	VName MakeName(const std::string_view Name);
+VNameRegistry& GetNameRegistry();
+VName MakeName(const std::string_view Name);
+
+inline VName NAME_None = VName(VString::NullString);
 }

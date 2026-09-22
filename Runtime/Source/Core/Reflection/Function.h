@@ -16,7 +16,7 @@ using VNativeFunction = void (*)(VObject* Object, void* Parameters);
 class VFunction : public VField
 {
 public:
-	VFunction(const VNativeFunction InInvoker = nullptr, const VString& InName = VString::NullString);
+	VFunction(const VNativeFunction InInvoker = nullptr, const VName& InName = NAME_None);
 	virtual ~VFunction() override = default;
 
 	virtual void Invoke(VObject* Object, void* Parameters) const;

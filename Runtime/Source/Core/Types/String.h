@@ -19,6 +19,24 @@ public:
 	VString(const VString& String);
 	~VString();
 	
+	static VString FromInt8(const int8 Value);
+	static VString FromUInt8(const uint8 Value);
+	
+	static VString FromInt16(const int16 Value);
+	static VString FromUInt16(const uint16 Value);
+	
+	static VString FromInt32(const int32 Value);
+	static VString FromUInt32(const uint32 Value);
+	
+	static VString FromInt64(const int64 Value);
+	static VString FromUInt64(const uint64 Value);
+	
+	static VString FromFloat32(const float32 Value);
+	static VString FromFloat64(const float64 Value);
+	
+	static VString FromChar(const char Character);
+	static VString FromBool(const bool Value);
+	
 	void Reserve(const TSize NewCapacity);
 	void Resize(const TSize NewSize, const char FillCharacter = '\0');
 	

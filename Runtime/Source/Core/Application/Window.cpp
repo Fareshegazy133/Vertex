@@ -31,7 +31,7 @@ void VWindow::Construct()
 	}
 	
 	SetConfigFlags(ConfigFlags);
-	InitWindow(WindowSpecification.Width, WindowSpecification.Height, WindowSpecification.WindowName);
+	InitWindow(WindowSpecification.Width, WindowSpecification.Height, WindowSpecification.WindowName.ToString());
 }
 
 void VWindow::Destruct()

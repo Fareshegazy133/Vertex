@@ -15,7 +15,7 @@ namespace VCore
 {
 struct VApplicationSpecification
 {
-	VString ApplicationName = "Vertex";
+	VName ApplicationName = "Vertex";
 	VWindowSpecification WindowSpecification;
 };
 

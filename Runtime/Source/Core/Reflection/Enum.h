@@ -12,17 +12,17 @@ class VEnum : public VField
 public:
 	struct Enumerator
 	{
-		VString Name;
+		VName Name;
 		int64 Value;
 	};
 
 public:
-	explicit VEnum(const VString& InName = VString::NullString);
+	explicit VEnum(const VName& InName = NAME_None);
 	virtual ~VEnum() override = default;
 
-	void AddEnumerator(const VString& Name, const int64 Value);
+	void AddEnumerator(const VName& Name, const int64 Value);
 
-	const Enumerator* FindEnumerator(const VString& EnumeratorName) const;
+	const Enumerator* FindEnumerator(const VName& EnumeratorName) const;
 	const Enumerator* FindEnumerator(const int64 Value) const;
 	
 	const Enumerator* GetEnumerator(const TSize Index) const;

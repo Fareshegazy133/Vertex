@@ -6,23 +6,26 @@
 
 namespace VCore
 {
-VEnum::VEnum(const VString& InName)
+VEnum::VEnum(const VName& InName)
 {
 	FieldName = InName;
 }
 
-void VEnum::AddEnumerator(const VString& Name, const int64 Value)
+void VEnum::AddEnumerator(const VName& Name, const int64 Value)
 {
-	Enumerators.Add({.Name = Name,.Value = Value});
+	Enumerator Enumerator;
+	Enumerator.Name = Name;
+	Enumerator.Value = Value;
+	Enumerators.Add(Enumerator);
 }
 
-const VEnum::Enumerator* VEnum::FindEnumerator(const VString& EnumeratorName) const
+const VEnum::Enumerator* VEnum::FindEnumerator(const VName& EnumeratorName) const
 {
-	if (!EnumeratorName) return nullptr;
+	if (!EnumeratorName.IsValid()) return nullptr;
 
 	for (const auto& Enumerator : Enumerators)
 	{
-		if (Enumerator.Name && std::strcmp(Enumerator.Name, EnumeratorName) == 0) return &Enumerator;
+		if (Enumerator.Name == EnumeratorName) return &Enumerator;
 	}
 
 	return nullptr;

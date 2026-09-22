@@ -61,7 +61,7 @@ void VObject::SetOuter(VObject* InOuter)
 	Outer = InOuter;
 }
 	
-void VObject::SetName(const VString& InName)
+void VObject::SetName(const VName& InName)
 {
 	Name = InName;
 }
@@ -88,20 +88,21 @@ EVObjectFlags VObject::GetObjectFlags() const
 	return ObjectFlags;
 }
 
-VString VObject::GetName() const
+VName VObject::GetName() const
 {
 	return Name;
 }
 
 VString VObject::GetPathName() const
 {
-	if (!Name) return VString::NullString;
-	if (!Outer) return Name;
-
+	if (!Name.IsValid()) return VString::NullString;
+	const VString& NameString = Name.ToString();
+	
+	if (!Outer) return NameString;
 	const VString OuterPath = Outer->GetPathName();
-	if (OuterPath.IsEmpty()) return Name;
-
-	return OuterPath + "." + Name;
+	
+	if (OuterPath.IsEmpty()) return NameString;
+	return OuterPath + "." + NameString;
 }
 
 bool VObject::IsRootObject() const

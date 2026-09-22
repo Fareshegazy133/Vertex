@@ -5,6 +5,7 @@
 #include "Core/CoreAliases.h"
 #include "Core/Object/ObjectBase.h"
 #include "Core/Object/ObjectFlags.h"
+#include "Core/Types/Name.h"
 
 namespace VCore
 {
@@ -29,12 +30,12 @@ public:
 	void MarkPendingKill();
 	
 	void SetOuter(VObject* InOuter);
-	void SetName(const VString& InName);
+	void SetName(const VName& InName);
 	
 	VObject* GetOuter() const;
 	VObject* GetOuterMost() const;
 	EVObjectFlags GetObjectFlags() const;
-	VString GetName() const;
+	VName GetName() const;
 	VString GetPathName() const;
 	
 	bool HasAnyObjectFlags(EVObjectFlags InObjectFlags) const;
@@ -45,6 +46,6 @@ public:
 private:
 	VObject* Outer;
 	EVObjectFlags ObjectFlags;
-	VString Name = VString::NullString;
+	VName Name = NAME_None;
 };
 }

@@ -7,7 +7,7 @@
 
 namespace VCore
 {
-void VObjectBaseUtility::Rename(VObject* Object, const VString& NewName)
+void VObjectBaseUtility::Rename(VObject* Object, const VName& NewName)
 {
 	if (!Object) return;
 	Object->SetName(NewName);
@@ -24,17 +24,17 @@ void VObjectBaseUtility::SetOuter(VObject* Object, VObject* NewOuter)
 	Object->SetOuter(NewOuter);
 }
 
-VObject* VObjectBaseUtility::FindObject(const VClass* Class, const VObject* Outer, const VString& Name)
+VObject* VObjectBaseUtility::FindObject(const VClass* Class, const VObject* Outer, const VName& Name)
 {
 	return VObjectManager::Get().FindObject(Class, Outer, Name);
 }
 
-VObject* VObjectBaseUtility::FindObjectByName(const VString& Name)
+VObject* VObjectBaseUtility::FindObjectByName(const VName& Name)
 {
 	return VObjectManager::Get().FindObject(Name);
 }
 
-VObject* VObjectBaseUtility::FindObjectByPath(const VString& Path)
+VObject* VObjectBaseUtility::FindObjectByPath(const VName& Path)
 {
 	return VObjectManager::Get().FindObject(Path);
 }

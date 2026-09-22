@@ -118,7 +118,7 @@ VObjectHandle VObjectManager::FindHandle(const VObject* RawPtr) const
 	return VObjectHandle();
 }
 
-VObjectHandle VObjectManager::FindHandle(const VString& ObjectName) const
+VObjectHandle VObjectManager::FindHandle(const VName& ObjectName) const
 {
 	for (int32 Index = 0; Index < ObjectEntries.Num(); Index++)
 	{
@@ -136,7 +136,7 @@ VObject* VObjectManager::FindObject(const VObjectHandle& ObjectHandle)
 	return ObjectEntries[ObjectHandle.Index].Object.Get();
 }
 
-VObject* VObjectManager::FindObject(const VString& ObjectName)
+VObject* VObjectManager::FindObject(const VName& ObjectName)
 {
 	for (int32 Index = 0; Index < ObjectEntries.Num(); Index++)
 	{
@@ -153,7 +153,7 @@ VObject* VObjectManager::FindObject(const VString& ObjectName)
 	return nullptr;
 }
 
-VObject* VObjectManager::FindObject(const VClass* Class, const VObject* Outer, const VString& Name)
+VObject* VObjectManager::FindObject(const VClass* Class, const VObject* Outer, const VName& Name)
 {
 	for (int32 Index = 0; Index < ObjectEntries.Num(); Index++)
 	{
@@ -192,7 +192,7 @@ const VObject* VObjectManager::FindObject(const VObjectHandle& ObjectHandle) con
 	return ObjectEntries[ObjectHandle.Index].Object.Get();
 }
 
-const VObject* VObjectManager::FindObject(const VString& ObjectName) const
+const VObject* VObjectManager::FindObject(const VName& ObjectName) const
 {
 	for (int32 Index = 0; Index < ObjectEntries.Num(); Index++)
 	{

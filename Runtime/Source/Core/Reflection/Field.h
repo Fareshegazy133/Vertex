@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Core/Types/String.h"
+#include "Core/Types/Name.h"
 
 namespace VCore
 {
@@ -13,13 +13,13 @@ public:
 	virtual ~VField() = default;
 
 	void SetNextField(VField* InNextField);
-	void SetName(const VString& InName);
+	void SetName(const VName& InName);
 	
 	VField* GetNextField() const;
-	VString GetName() const;
+	VName GetName() const;
 
 protected:
 	VField* NextField = nullptr;
-	VString FieldName = VString::NullString;
+	VName FieldName = NAME_None;
 };
 }

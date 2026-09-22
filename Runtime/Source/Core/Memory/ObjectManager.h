@@ -48,13 +48,13 @@ public:
 	void ProcessDeferredDestruction();
 
 	VObjectHandle FindHandle(const VObject* RawPtr) const;
-	VObjectHandle FindHandle(const VString& ObjectName) const;
+	VObjectHandle FindHandle(const VName& ObjectName) const;
 	VObject* FindObject(const VObjectHandle& ObjectHandle);
-	VObject* FindObject(const VString& ObjectName);
-	VObject* FindObject(const VClass* Class, const VObject* Outer, const VString& Name);
+	VObject* FindObject(const VName& ObjectName);
+	VObject* FindObject(const VClass* Class, const VObject* Outer, const VName& Name);
 	VObject* FindObjectByPath(const VString& Path);
 	const VObject* FindObject(const VObjectHandle& ObjectHandle) const;
-	const VObject* FindObject(const VString& ObjectName) const;
+	const VObject* FindObject(const VName& ObjectName) const;
 	
 	VArray<VObject*> GetObjects(const VClass* Class);
 	VArray<const VObject*> GetObjects(const VClass* Class) const;

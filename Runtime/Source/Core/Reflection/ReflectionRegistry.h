@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Core/Containers/Map.h"
-#include "Core/Types/String.h"
+#include "Core/Types/Name.h"
 
 namespace VCore
 {
@@ -20,20 +20,20 @@ public:
 	void RegisterStruct(VStruct* Struct);
 	void RegisterEnum(VEnum* Enum);
 
-	VClass* FindClass(const VString& Name) const;
-	VStruct* FindStruct(const VString& Name) const;
-	VEnum* FindEnum(const VString& Name) const;
+	VClass* FindClass(const VName& Name) const;
+	VStruct* FindStruct(const VName& Name) const;
+	VEnum* FindEnum(const VName& Name) const;
 
-	const VMap<VString, VClass*>& GetClasses() const;
-	const VMap<VString, VStruct*>& GetStructs() const;
-	const VMap<VString, VEnum*>& GetEnums() const;
+	const VMap<VName, VClass*>& GetClasses() const;
+	const VMap<VName, VStruct*>& GetStructs() const;
+	const VMap<VName, VEnum*>& GetEnums() const;
 
 private:
 	VReflectionRegistry() = default;
 
 private:
-	VMap<VString, VClass*> Classes;
-	VMap<VString, VStruct*> Structs;
-	VMap<VString, VEnum*> Enums;
+	VMap<VName, VClass*> Classes;
+	VMap<VName, VStruct*> Structs;
+	VMap<VName, VEnum*> Enums;
 };
 }
