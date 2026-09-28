@@ -1,0 +1,29 @@
+# Normalize line endings: text files are stored as LF in the repository
+# and converted to the platform's native endings on checkout.
+* text=auto
+
+# Scripts must keep the endings their interpreter expects, on every platform.
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+*.sh    text eol=lf
+
+# Source and build descriptors
+*.h     text diff=cpp
+*.hpp   text diff=cpp
+*.inl   text diff=cpp
+*.c     text diff=cpp
+*.cpp   text diff=cpp
+*.lua   text
+*.md    text diff=markdown
+
+# Binaries: never diff, never convert
+*.exe   binary
+*.dll   binary
+*.lib   binary
+*.pdb   binary
+*.zip   binary
+*.png   binary
+*.jpg   binary
+*.ttf   binary
+*.wav   binary
+*.ogg   binary
