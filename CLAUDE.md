@@ -50,8 +50,32 @@ A folder never includes a folder above it. Promote a folder to its own module **
 - premake is pinned (`Build/Premake/Bin/Windows/premake5.exe`, v5.0.0-beta8). Don't upgrade it casually.
 - Third-party sources are fetched by **tag and verified commit SHA** declared in their descriptor, never a branch. A commit mismatch fails loudly and never auto-deletes.
 - Configurations: `Debug`, `Development`, `Shipping`. Defines are prefixed (`VERTEX_DEBUG`, …). Shipping still produces PDBs.
-- Vertex modules build at `/W4` with warnings as errors; ThirdParty builds with warnings off.
+- Vertex modules build at `/W4` with warnings as errors, plus C4062 (an enum value missing from a `switch` with no `default:`). ThirdParty builds with warnings off.
+- Switches over an enum don't use `default:`, so C4062 flags every switch that forgets a newly added value.
 - Generated files go to `Intermediate/ProjectFiles/`, binaries to `Binaries/`. Neither is committed.
+
+## Commands
+
+| Task | Command (from the repo root) |
+|---|---|
+| Fetch third-party sources and generate `Vertex.sln` | `Scripts\Setup.bat` |
+| After bumping a third-party version | `Scripts\Setup.bat --refetch` |
+| Delete generated output (keeps fetched sources) | `Scripts\Clean.bat` |
+| Build everything | `& "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe" Vertex.sln -m -p:Configuration=<Debug\|Development\|Shipping> -p:Platform=x64` |
+| Build one project | Same, but pass `Intermediate\ProjectFiles\<Module>.vcxproj` instead of the `.sln`. Solution folders make `-t:<Name>` awkward. |
+
+- Solution project names are the module names (`Core`, `Runtime`, …). Output files are prefixed: `VertexEditor.exe`, `VertexCore.lib`.
+- Executables go to `Binaries\Win64-<Config>\`, libraries to `Intermediate\Build\<Config>\<Module>\`.
+- Regenerate (`Setup.bat`) after adding, removing, or renaming source files. New files are only picked up at generation time.
+- Create new source files on disk under `Source/<Module>/`, never through the IDE's project tree. The generated projects live in `Intermediate/ProjectFiles/`, so an IDE "Add New File" lands there. That folder is git-ignored and deleted by `Clean.bat`.
+
+## Defines available to C++
+
+| Define | Meaning |
+|---|---|
+| `VERTEX_DEBUG` / `VERTEX_DEVELOPMENT` / `VERTEX_SHIPPING` | Exactly one is defined, per configuration |
+| `VERTEX_ENABLE_ASSERTS` | `1` in Debug and Development, `0` in Shipping |
+| `CORE_API`, `RUNTIME_API` | Export markers for a module's public classes and functions. Defined **empty** while modules are static libraries; they become `__declspec(dllexport/dllimport)` if a module ever becomes a DLL. Use them on public API from day one. |
 
 ## Source layout per module
 
@@ -62,7 +86,89 @@ Source/<Module>/
   Private/   .cpp files and internal headers
 ```
 
-Core's public headers live under `Public/Core/…`, so includes read `#include "Core/Containers/Array.h"`.
+Core's public headers live under `Public/Core/…`, so includes read `#include "Core/Containers/Array.h"`. The `Core/` prefix tells every consumer which module a header comes from, and keeps Core's generic folder names (`Containers`, `Math`, `Logging`) from colliding with anyone else's.
+
+`Private/` mirrors `Public/` **without** the module folder: `Private/Logging/Log.cpp`, and private headers are included as `"Logging/Foo.h"`. Only the module itself sees `Private/`, so there is nothing to disambiguate, and a private include never looks like a public one.
+
+## Code style
+
+- Allman braces (the opening brace on its own line) everywhere, including Lua tables. Indent with tabs (enforced by `.editorconfig`). Files are UTF-8 without BOM.
+
+### C++ naming (agreed in M0 step 7)
+
+| Thing | Rule | Example |
+|---|---|---|
+| Classes and structs | `V` + PascalCase | `VWindow`, `VWindowDesc` |
+| Class templates | `T` + PascalCase | `TArray`, `TSet` |
+| Template type parameters | `T` + PascalCase | `TElement`, `TArgs` |
+| Enums | `enum class`, `E` + PascalCase; values in PascalCase | `ELogLevel::Warning` |
+| Functions, members, locals | PascalCase, no `m_` | `RunApplication()`, `LayerStack` |
+| Bools (members and locals) | `b` prefix | `bIsRunning` |
+| Bool parameters | No `b` | `SetVSync(bool VSync)` |
+| Parameters | `In` only when the name would match a member; `Out` always on output parameters | `SetDesc(const VWindowDesc& InDesc)`, `bool& OutSucceeded` |
+| Free functions | Inside `namespace Vertex`; internals that a header must expose go inside `Vertex::Private`; helpers used by one `.cpp` only go in an anonymous namespace | `Vertex::InitializeRuntime()` |
+| Constants | `constexpr`, PascalCase, never `#define` | `MaxLogLineLength` |
+| Macros | `V` prefix, UPPER_SNAKE. `VERTEX_*` and `<MODULE>_API` come from the build. | `VCLASS`, `V_DECLARE_CLASS` |
+| Files | Named after the main type, without its prefix | `TArray` → `Array.h` |
+
+Why:
+- Types live at global scope, so their prefix is what keeps them from colliding with raylib's and Windows' unprefixed global names (`CloseWindow`, `DrawText`, …). Free functions have no prefix, so they live in `namespace Vertex`.
+- Macros are expanded by the preprocessor before namespaces exist, so a prefix is their only protection.
+- A method parameter with the same name as a member hides it ("shadowing"), which is warning C4458. At `/W4` with warnings as errors, that fails the build. Hence the `In` rule.
+
+### File layout
+
+Every `.h`, `.cpp`, and `.inl` starts with the copyright line. Headers follow it with `#pragma once`. Includes are written from the module's include root.
+
+```cpp
+// Copyright HNDRED GAMES. All Rights Reserved.
+
+#pragma once
+
+#include "Core/Logging/Log.h"
+```
+
+A `.cpp` includes its own header first. If that header is missing an include it needs, it fails right there instead of somewhere unrelated, which keeps every header self-sufficient.
+
+### Declaration order (agreed in M0 step 7)
+
+Inside a class or struct, declarations come in three groups, in this order: **types, then functions, then variables**, never interleaved. Each group runs its own `public` → `protected` → `private` sequence, so a group re-states an access specifier even when the previous group ended on the same one. Two adjacent `private:` sections are correct, not redundant. Static data members and callbacks (a `std::function` member, for example) count as variables.
+
+Types come first because C++ only lets a function signature use a type declared above it. A nested type placed among the variables fails to compile (C3646) as soon as a function takes or returns it.
+
+```cpp
+class RUNTIME_API VWindow
+{
+public:
+	enum class EMode : std::uint8_t
+	{
+		Windowed,
+		Fullscreen
+	};
+
+public:
+	explicit VWindow(const VWindowDesc& InDesc);
+
+	EMode GetMode() const;
+
+private:
+	void ApplyDesc();
+
+private:
+	VWindowDesc Desc;
+	EMode Mode = EMode::Windowed;
+};
+```
+
+A `.cpp` (or `.inl`) defines its functions in the order the header declares them. Helpers in the `.cpp`'s anonymous namespace sit above those definitions.
+
+Why:
+- A reader finds the whole API in one block and the whole state in another. The variables block shows what the object owns at a glance.
+- Matching order lets you read the `.h` and the `.cpp` side by side. A new function lands in the same place in both files, which keeps diffs predictable.
+
+### Decided when first needed
+
+Concepts, interfaces, global variables, and type aliases. The M2 port has to rename the old `using TSize = size_t;`, which now reads like a class template.
 
 ## Git workflow (GitHub Flow)
 
