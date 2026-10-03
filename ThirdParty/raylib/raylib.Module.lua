@@ -13,14 +13,16 @@ return
 	Language = "C",
 	CStandard = "C11",
 
-	Source = {
+	Source =
+	{
 		Git = "https://github.com/raysan5/raylib.git",
 		Tag = "6.0",
 		Commit = "dbc56a87da87d973a9c5baa4e7438a9d20121d28",
 	},
 
 	-- Relative to the fetched Source/ folder.
-	Files = {
+	Files =
+	{
 		"src/rcore.c",
 		"src/rshapes.c",
 		"src/rtextures.c",
@@ -32,14 +34,16 @@ return
 	PublicIncludeDirs = { "src" },
 	PrivateIncludeDirs = { "src/external/glfw/include" },
 
-	PrivateDefines = {
+	PrivateDefines =
+	{
 		"PLATFORM_DESKTOP_GLFW",
 		"GRAPHICS_API_OPENGL_33",
 		"_CRT_SECURE_NO_WARNINGS",
 	},
 
 	-- Whatever links raylib must also link these.
-	SystemLibraries = {
+	SystemLibraries =
+	{
 		Windows = { "opengl32", "gdi32", "winmm", "shell32" }, -- matches raylib's own src/Makefile
 	},
 }

@@ -149,12 +149,14 @@ function Fetch.Register(Descriptors)
 		end
 	end
 
-	newoption {
+	newoption
+	{
 		trigger = "refetch",
 		description = "fetch: move existing third-party clones to their pinned commit (refuses if they have local changes)",
 	}
 
-	newaction {
+	newaction
+	{
 		trigger = "fetch",
 		description = "Fetch third-party sources at the tag + commit pinned in their *.Module.lua",
 		execute = function()

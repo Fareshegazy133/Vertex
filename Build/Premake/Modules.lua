@@ -288,7 +288,8 @@ local function DeclareVertexModule(Module)
 	language "C++"
 	targetname("Vertex" .. Module.Name)
 
-	files {
+	files
+	{
 		path.join(Module.Dir, "Public/**.h"),
 		path.join(Module.Dir, "Public/**.inl"),
 		path.join(Module.Dir, "Private/**.h"),
