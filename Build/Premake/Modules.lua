@@ -299,6 +299,10 @@ local function DeclareVertexModule(Module)
 	-- Our code: strict. /W4, warnings are errors, standard-conforming C++.
 	warnings "Extra"
 	fatalwarnings { "All" }
+	-- C4062: a switch on an enum misses a value and has no default. MSVC ships it off,
+	-- even at /W4. With it on (and our "no default:" habit), adding an enum value
+	-- fails the build at every switch that forgot to handle it.
+	enablewarnings { "4062" }
 	conformancemode(true)
 	usestandardpreprocessor "On"
 	filter "action:vs*"
