@@ -71,13 +71,30 @@ Core's public headers live under `Public/Core/…`, so includes read `#include "
   - `feature/<milestone>-<topic>` for new work, e.g. `feature/m0-engine-skeleton`
   - `fix/<topic>`, `chore/<topic>` (build, tooling, cleanup), `docs/<topic>`
 - **Commit messages:** an imperative summary of at most 72 characters ("Add Core logging", not "Added…"), a blank line, then *why* in the body.
-- **Pull requests into `master`:** Fares reads the diff, merges with **squash**, and deletes the branch. Claude prepares the PR title and body; Fares creates and merges it.
+- **Pull requests into `master`** merge with **squash**, and the branch is deleted. Claude raises and merges PRs as a chore, with the `gh` CLI, after verifying the build. `chore/` and `docs/` PRs hold Claude-owned work and merge once verified. `feature/` and `fix/` PRs hold Fares' engine code: Fares reads the diff first, and Claude merges when he says go.
 - **Milestones are tagged** on `master` when complete: `m0`, `m1`, …
 - Never force-push `master`. Never commit generated files (`Binaries/`, `Intermediate/`, `Vertex.sln`, `ThirdParty/*/Source/`).
 
 ## Unreal Engine reference
 
 UE 5.7.4 source: `C:\Developer Projects\HNDREDGAMES\UE_5_7_4`. Use it as inspiration for every system: find the counterpart and ask *what problem Epic solved, and does Vertex have it yet*. **Study, never copy.** UE code is under Epic's EULA.
+
+### API lookup (unreal-api MCP)
+
+The `unreal-api` MCP indexes UE's gameplay-facing C++ API (`AActor`, `UGameplayStatics`, …): signatures, class members, and `#include` paths. It doesn't index engine internals. Spot checks for `FEngineLoop`, `FGenericPlatformMisc`, and `TArray` found nothing.
+
+| When | Tool | Example |
+|---|---|---|
+| Seeing how Epic shaped a class's public API | `get_class_reference` | `get_class_reference("UGameplayStatics")` |
+| Finding an API by keyword | `search_unreal_api` | `search_unreal_api("spawn actor")` |
+| Reading one function's exact signature | `get_function_signature` | `get_function_signature("AActor::GetActorLocation")` |
+| Finding a UE type's header, to open it in the local source | `get_include_path` | `get_include_path("ACharacter")` |
+| Seeing which designs Epic moved away from, and what replaced them | `get_deprecation_warnings` | `get_deprecation_warnings("K2_AttachRootComponentTo")` |
+
+- It's a study aid, like the source tree. Quote a UE signature to discuss a design; never paste UE code into Vertex.
+- For engine internals (Core, HAL, containers, RHI, the engine loop, the header tool), read the local 5.7.4 source.
+- Never use it to verify Vertex code. Vertex's APIs and includes come from this repo.
+- If the MCP and the local source disagree, the local source wins: 5.7.4 is the version Vertex studies.
 
 ## Porting the earlier Vertex
 
