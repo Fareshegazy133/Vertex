@@ -5,7 +5,7 @@ Vertex is a C++20 mini engine. raylib is the first backend and must stay replace
 Working mode: Fares is learning engine architecture by building it.
 - **Claude writes the build setup:** everything under `Build/`, `Scripts/`, `Vertex.lua`, and every `*.Module.lua`. Also docs and mechanical edits. After writing, walk Fares through what each file does and why.
 - **Fares writes all engine C++**, walked through one card at a time (see the user-level CLAUDE.md, Mentorship Mode rule 7).
-- **Claude writes the comments** in that C++, as a chore: on functions, classes, variables, and anything else that needs one (see Code style § Comments).
+- **Claude writes every comment** in that C++, as a chore (see Code style § Comments).
 - Every feature follows the cycle in **Feature workflow** below.
 
 ## Module graph
@@ -171,12 +171,121 @@ Why:
 
 ### Comments
 
-Claude writes and maintains the comments in engine C++ (see Working mode). When code changes, its comments change in the same commit. A stale comment is a bug.
+Claude writes and maintains every comment in engine C++ (see Working mode). When code changes, its comments change in the same commit. A stale comment is a bug.
 
-- A comment says **why**: intent, constraints, edge cases, the trap a later edit could fall into. It never restates the code.
-- Public functions, classes, and members in a `Public/` header get a comment whenever the signature doesn't state the whole contract: ownership, how long a view or pointer must stay valid, thread safety, cost (for example "flushes every line"), and when it may be called.
-- Inside a `.cpp`, comment what a careful reader could get wrong: a load-bearing line, a workaround, a return the compiler requires but that should never run.
-- Use `//` line comments, placed directly above what they describe.
+#### What gets a comment
+
+Every declaration in a header, `Public/` or `Private/`, with no exceptions:
+- classes, structs, and unions, nested ones included;
+- functions, including constructors, destructors, operators, and `= default` or `= delete` members;
+- variables at namespace or class scope: members, statics, globals, and constants;
+- enums, and every enum value.
+
+Never commented: namespaces, type aliases, macros, concepts, local variables, and anything that lives only in a `.cpp` (its helper functions, types, and file-local variables).
+
+#### Format
+
+```cpp
+/** A comment that fits on one line and has no tags. */
+
+/**
+ * A summary of what the declaration is or does.
+ *
+ * @param Name Tags start after one blank " *" line.
+ */
+```
+
+- A comment with any tag, or one too long for one line, uses the block form: `/**` alone on its line, then ` * ` lines, then ` */` alone.
+- A comment sits on its own line, directly above what it describes.
+- Tags follow one another with no blank lines between them. One space separates a tag from its text, with no column alignment: aligned columns get re-padded whenever a longer name arrives, which turns one-line changes into noisy diffs.
+- The copyright line is the only `//` comment in the codebase.
+
+#### Content
+
+A comment says **why**: intent, units, valid range, who writes it, the trap a later edit could fall into. It adds what the declaration can't say and never restates the code. `/** The width. */` above `int Width;` adds nothing. `/** Client width in pixels. Only the backend writes it, on resize. */` does.
+
+#### Functions
+
+A short summary of what the function does, then these tags, in this order:
+
+| Tag | When |
+|---|---|
+| `@tparam` | One per template parameter |
+| `@param` | One per parameter |
+| `@return` | Every function that returns a value. It says what special values mean (`nullptr`, empty, `-1`). |
+| `@warning` | Each thing a caller can get wrong that causes an error: a precondition, an invalidated pointer, the wrong thread |
+| `@note` | Each thing a caller should know that won't cause an error: cost, flushing, ordering |
+
+An override gets only a one-line comment saying what differs from the base version. The base's comment holds the contract.
+
+```cpp
+/**
+ * Writes one line, formatted as "[Level] Message", and adds the newline.
+ *
+ * @param LogLevel Severity. Info goes to stdout; Warning and Error go to stderr.
+ * @param Message The text to write. Read only during the call; it needs no null terminator.
+ * @note Safe to call from any thread: each line is written whole, then flushed.
+ * @note Every call flushes, which costs a write to the OS. Keep logging out of per-frame code.
+ */
+CORE_API void Log(const ELogLevel LogLevel, const std::string_view Message);
+```
+
+#### Classes, structs, and unions
+
+A summary of what the type is and the role it plays in the engine, then these tags, in this order:
+
+| Tag | The question it answers | Required |
+|---|---|---|
+| `@inherits <Base>` | What does this type change from that base, and why does it derive from it? One per direct base. | Every derived type |
+| `@ownership` | Who creates, owns, and destroys it? Can it be copied or moved? Does it own its resources or borrow them? | Always |
+| `@lifetime` | When does it become valid, when does it die, and what invalidates it or pointers into it? | Always |
+| `@threading` | Which threads may use it, and what's guaranteed? | Always |
+| `@networking` | Who has authority? Is it local only, server-owned, or replicated, and to whom? | Always |
+| `@performance` | Does it allocate? What do its key operations cost? Is it safe on a per-frame path? | When it matters |
+| `@backend` | Which backend does it hide or depend on? | Runtime types that touch the platform |
+| `@invariants` | What's always true about a valid instance? | When it has any |
+
+```cpp
+/**
+ * The application's OS window. It owns the native window and presents each rendered frame.
+ *
+ * @ownership Owned by the engine loop. Non-copyable: it owns the native window handle.
+ * @lifetime Valid from construction to destruction.
+ * @threading Game thread only.
+ * @networking Local only. A dedicated server never creates one.
+ * @backend Backend-neutral. The raylib translation lives in Platform/Raylib.
+ */
+class RUNTIME_API VWindow
+```
+
+#### Enums
+
+The enum's comment says what it's used for. Each value's comment says what that value represents. An enum that is saved to disk or sent over the network also carries `@warning Values are serialized: append new ones at the end; never reorder or remove.` Reordering one silently breaks old save files, and clients running another version.
+
+#### Header comments
+
+A header gets a file comment only when it holds two or more top-level classes, structs, or unions, or none at all (only functions, variables, enums, and so on). With exactly one top-level type, that type's comment already describes the file.
+
+The file comment sits between the copyright line and `#pragma once`. It says what the file provides as a unit and why these declarations share a file. With several types, it says which one to read first. `@see` pointing at related headers is optional. It never lists the file's contents: that repeats the code and goes stale with the next declaration.
+
+```cpp
+// Copyright HNDRED GAMES. All Rights Reserved.
+
+/** Core logging: the severity levels and the function that writes one line to the console. */
+
+#pragma once
+```
+
+#### Inside `.cpp` files and function bodies
+
+Avoid comments. Write one only when a careful reader could get the code wrong without it: a load-bearing line, a workaround, or a return the compiler requires but that should never run. The same formats apply.
+
+Block comments don't nest. A `/* … */` wrapped around code that contains a doc comment ends at that comment's `*/`. Disable code with `#if 0` … `#endif` instead.
+
+Why:
+- Doxygen and IDE hovers only treat `/**` as documentation, and UE uses the same form for one-line and block comments. A single marker also keeps a future HeaderTool simple if it turns comments into editor tooltips, the way UHT does.
+- The function tags are Doxygen's standard set (`@note`, not `@info`), so tools understand them. The class tags are Vertex's own, because Doxygen has none for these questions.
+- The four always-required class tags make an omission visible. A missing line could mean "forgot" or "doesn't apply", while `@networking Local only.` records a decision, made on the day the type is written.
 
 ### Decided when first needed
 
