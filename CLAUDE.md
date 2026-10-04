@@ -5,6 +5,7 @@ Vertex is a C++20 mini engine. raylib is the first backend and must stay replace
 Working mode: Fares is learning engine architecture by building it.
 - **Claude writes the build setup:** everything under `Build/`, `Scripts/`, `Vertex.lua`, and every `*.Module.lua`. Also docs and mechanical edits. After writing, walk Fares through what each file does and why.
 - **Fares writes all engine C++**, walked through one card at a time (see the user-level CLAUDE.md, Mentorship Mode rule 7).
+- Every feature follows the cycle in **Feature workflow** below.
 
 ## Module graph
 
@@ -169,6 +170,19 @@ Why:
 ### Decided when first needed
 
 Concepts, interfaces, global variables, and type aliases. The M2 port has to rename the old `using TSize = size_t;`, which now reads like a class template.
+
+## Feature workflow
+
+Every feature runs the same cycle, in one conversation. Fares clears the chat between features, so anything the next conversation needs is saved before the cycle ends.
+
+1. **Plan together.** Discuss the problem, the design forks, and the UE counterpart. Claude recommends; Fares makes the calls.
+2. **Write the plan.** Claude cuts a `feature/<milestone>-<topic>` branch and writes the plan to `.claude/plans/<milestone>-<topic>.md`. The plan covers the decisions and why, the files to create or change, the walkthrough cards in dependency order, and how to verify. Fares reviews it. Nothing is implemented until he approves.
+3. **Implement, one card at a time.** Claude walks Fares through each card (user-level CLAUDE.md, Mentorship Mode rule 7). Fares writes the engine C++. Claude does the chores.
+4. **Review.** When Fares says the feature is done, Claude runs `/review`. Fares fixes every ERROR and WARNING, and Claude reviews again until it says **"Review passed."**
+5. **PR and merge.** Claude commits, raises the PR, and merges it once Fares has read the diff and says go (see Git workflow).
+6. **Hand off.** Claude says what's next, marks the plan done, saves what the next conversation needs to its memory, and tells Fares it's safe to clear the chat.
+
+The plan is committed on the feature branch, so the PR carries the design and a later conversation can read it.
 
 ## Git workflow (GitHub Flow)
 
