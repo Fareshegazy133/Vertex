@@ -5,6 +5,7 @@ Vertex is a C++20 mini engine. raylib is the first backend and must stay replace
 Working mode: Fares is learning engine architecture by building it.
 - **Claude writes the build setup:** everything under `Build/`, `Scripts/`, `Vertex.lua`, and every `*.Module.lua`. Also docs and mechanical edits. After writing, walk Fares through what each file does and why.
 - **Fares writes all engine C++**, walked through one card at a time (see the user-level CLAUDE.md, Mentorship Mode rule 7).
+- **Claude writes the comments** in that C++, as a chore: on functions, classes, variables, and anything else that needs one (see Code style § Comments).
 - Every feature follows the cycle in **Feature workflow** below.
 
 ## Module graph
@@ -94,6 +95,7 @@ Core's public headers live under `Public/Core/…`, so includes read `#include "
 ## Code style
 
 - Allman braces (the opening brace on its own line) everywhere, including Lua tables. Indent with tabs (enforced by `.editorconfig`). Files are UTF-8 without BOM.
+- By-value parameters are `const` in the declaration and the definition alike, so the two signatures stay identical: `void Log(const ELogLevel LogLevel, const std::string_view Message);`. The compiler ignores that `const` in a declaration. In the definition, it stops the body from reassigning a parameter by accident.
 
 ### C++ naming (agreed in M0 step 7)
 
@@ -166,6 +168,15 @@ A `.cpp` (or `.inl`) defines its functions in the order the header declares them
 Why:
 - A reader finds the whole API in one block and the whole state in another. The variables block shows what the object owns at a glance.
 - Matching order lets you read the `.h` and the `.cpp` side by side. A new function lands in the same place in both files, which keeps diffs predictable.
+
+### Comments
+
+Claude writes and maintains the comments in engine C++ (see Working mode). When code changes, its comments change in the same commit. A stale comment is a bug.
+
+- A comment says **why**: intent, constraints, edge cases, the trap a later edit could fall into. It never restates the code.
+- Public functions, classes, and members in a `Public/` header get a comment whenever the signature doesn't state the whole contract: ownership, how long a view or pointer must stay valid, thread safety, cost (for example "flushes every line"), and when it may be called.
+- Inside a `.cpp`, comment what a careful reader could get wrong: a load-bearing line, a workaround, a return the compiler requires but that should never run.
+- Use `//` line comments, placed directly above what they describe.
 
 ### Decided when first needed
 
