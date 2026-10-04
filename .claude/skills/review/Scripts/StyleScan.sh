@@ -135,10 +135,21 @@ for File in "${Files[@]}"; do
 			}
 		}
 
+		# A .cpp or .inl may hold no comments at all, so there a comment is the finding,
+		# whatever its shape.
+		function CommentHit(Rule, Line, Text)
+		{
+			if (!IsImpl)
+			{
+				Hit(Rule, Line, Text)
+			}
+		}
+
 		# awk needs a pattern and its opening brace on one line.
 		BEGIN {
 			IsHeader = (File ~ /\.(h|hpp)$/)
 			IsCpp = (File ~ /\.cpp$/)
+			IsImpl = (File ~ /\.(cpp|inl)$/)
 			IsPublic = (File ~ /\/Public\//)
 			IsRaylibBackend = (File ~ /^Source\/Runtime\/Private\/Platform\/Raylib\//)
 			IsLogBackend = (File ~ /\/Private\/Logging\//)
@@ -184,13 +195,14 @@ for File in "${Files[@]}"; do
 				Stripped = Raw
 				sub(/^[ \t]+/, "", Stripped)
 				sub(/[ \t]+$/, "", Stripped)
+				LineHasComment = BlockComment
 				if (BlockComment)
 				{
 					if (Code ~ /\*\//)
 					{
 						if (Stripped != "*/")
 						{
-							Hit("Comments: a block comment closes with */ alone on its line", N, Raw)
+							CommentHit("Comments: a block comment closes with */ alone on its line", N, Raw)
 						}
 						sub(/^.*\*\//, "", Code)
 						BlockComment = 0
@@ -199,7 +211,7 @@ for File in "${Files[@]}"; do
 					{
 						if (Stripped !~ /^\*( |$)/)
 						{
-							Hit("Comments: each line inside a block comment starts with \" * \"", N, Raw)
+							CommentHit("Comments: each line inside a block comment starts with \" * \"", N, Raw)
 						}
 						Code = ""
 					}
@@ -214,7 +226,8 @@ for File in "${Files[@]}"; do
 					{
 						if (N != 1)
 						{
-							Hit("Comments: // comment (use /** */; only the copyright line uses //)", N, Raw)
+							CommentHit("Comments: // comment (use /** */; only the copyright line uses //)", N, Raw)
+							LineHasComment = 1
 						}
 						Code = substr(Code, 1, LinePos - 1)
 						break
@@ -223,6 +236,7 @@ for File in "${Files[@]}"; do
 					{
 						break
 					}
+					LineHasComment = 1
 					Rest = substr(Code, BlockPos)
 					# The classic C-comment pattern: the shortest /* ... */, which awk has no lazy quantifier for.
 					if (match(Rest, /^\/\*([^*]|\*+[^*\/])*\*+\//))
@@ -230,7 +244,7 @@ for File in "${Files[@]}"; do
 						Comment = substr(Rest, 1, RLENGTH)
 						if (Comment !~ /^\/\*\* [^ ](.*[^ ])? \*\/$/)
 						{
-							Hit("Comments: a one-line comment is /** Description */", N, Raw)
+							CommentHit("Comments: a one-line comment is /** Description */", N, Raw)
 						}
 						Code = substr(Code, 1, BlockPos - 1) substr(Rest, RLENGTH + 1)
 						HadComment = 1
@@ -238,7 +252,7 @@ for File in "${Files[@]}"; do
 					}
 					if (Rest !~ /^\/\*\*[ \t]*$/ || substr(Code, 1, BlockPos - 1) ~ /[^ \t]/)
 					{
-						Hit("Comments: a block comment opens with /** alone on its line", N, Raw)
+						CommentHit("Comments: a block comment opens with /** alone on its line", N, Raw)
 					}
 					Code = substr(Code, 1, BlockPos - 1)
 					BlockComment = 1
@@ -246,11 +260,15 @@ for File in "${Files[@]}"; do
 				}
 				if (HadComment && Code ~ /[^ \t]/)
 				{
-					Hit("Comments: a comment sits on its own line, above what it describes", N, Raw)
+					CommentHit("Comments: a comment sits on its own line, above what it describes", N, Raw)
 				}
 				if (Raw ~ /@info([^A-Za-z0-9_]|$)/)
 				{
-					Hit("Comments: @info tag (use @note)", N, Raw)
+					CommentHit("Comments: @info tag (use @note)", N, Raw)
+				}
+				if (IsImpl && LineHasComment)
+				{
+					Hit("Comments: a .cpp or .inl has no comments besides the copyright line", N, Raw)
 				}
 			}
 			else
@@ -277,6 +295,33 @@ for File in "${Files[@]}"; do
 				if (N == 1 && Raw != "// Copyright HNDRED GAMES. All Rights Reserved.")
 				{
 					Hit("File layout: first line must be the copyright line", N, Raw)
+				}
+				# One blank line after every enum value but the last (CLAUDE.md "Enums").
+				# A value is a line ending in a comma; the last value has none.
+				if (InEnum)
+				{
+					if (Trimmed ~ /^\}/)
+					{
+						InEnum = 0
+					}
+					else if (AfterEnumValue && Stripped != "")
+					{
+						Hit("Enums: one blank line after every value but the last", N, Raw)
+					}
+					AfterEnumValue = (Trimmed ~ /,$/)
+				}
+				else if (EnumPending && Trimmed == "{")
+				{
+					InEnum = 1
+					EnumPending = 0
+					AfterEnumValue = 0
+				}
+				# A forward declaration ("enum class E : int;") has no body to check.
+				if (Code ~ /(^|[^A-Za-z0-9_])enum[ \t]+(class|struct)[^A-Za-z0-9_]/ && Trimmed !~ /;$/)
+				{
+					EnumPending = (Trimmed !~ /\{$/)
+					InEnum = (Trimmed ~ /\{$/)
+					AfterEnumValue = 0
 				}
 				if (FirstCode == "" && Trimmed != "")
 				{
