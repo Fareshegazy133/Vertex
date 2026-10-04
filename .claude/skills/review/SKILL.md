@@ -107,10 +107,19 @@ Check every row of the table. The scan covers type, enum, template-parameter, ma
 - Constants are `constexpr` PascalCase, never `#define`.
 - A file is named after its main type, without the prefix (`TArray` → `Array.h`).
 - A class template gets `T`, a plain class gets `V`. The scan can't tell which one a class is.
+- Getters (the Getters row): `Get…` always succeeds, so a `Get` that can return `nullptr`, an empty `std::optional`, or a not-found index is really a `Find`. A `bool` getter never starts with `Get` or `Find`. No `TryGet…`.
 
 ### 5. File layout (CLAUDE.md § File layout, § Declaration order, § Source layout per module)
 - The copyright line comes first in every `.h`, `.cpp`, and `.inl`. Headers follow it with `#pragma once`.
-- Inside a class or struct: nested types, then every function, then every variable. Each group runs `public` → `protected` → `private`. Flag a data member inside the functions block, and a function declared below the first variable. Two adjacent sections with the same access specifier are correct. The scan can't see this, so read each changed class.
+- **Class layout (CLAUDE.md § Declaration order).** The scan can't see this yet, so read every changed class, struct, and union, and check each rule:
+  - Types, then functions, then variables. Each group runs `public` → `protected` → `private`. Flag a data member inside the functions block, and a function declared below the first variable. Two adjacent sections with the same access specifier are correct.
+  - Types group: macros first, above the first access specifier, then aliases and nested types, each declared before anything that uses it.
+  - Functions, in each access section, follow the 13 rows of the table. Classify each function: constructors, the destructor, and operators go to their own rows by syntax. Every other function goes to the first of rows 4–12 it fits. Then confirm the rows never go backwards. Quote the out-of-place function and the row it belongs in.
+  - Row 2: your own parameter lists, then copy, then move. Row 4: new virtuals, then overrides grouped by base class in declaration order.
+  - Getter vs normal: a getter is `const`, has no output parameters, and is named as a question or a noun. A function that changes the object, or is named for an action, is normal, whatever it returns.
+  - Operators follow their seven-step order: `=`; compound assignment; their binary partners in matching order; comparison; `[]` then `()`; others; conversions.
+  - A `const`/non-`const` overload pair stays adjacent, `const` version first. Related functions stay together within a row.
+  - Variable order within an access section is undecided (§ Decided when first needed). Don't flag it. If a pattern shows up, raise it under **Convention governance**.
 - A `.cpp` or `.inl` defines its functions in the header's declaration order, with anonymous-namespace helpers above them. Compare the two files side by side.
 - Includes are written from the module's include root. Core's public headers live under `Public/Core/…`. `Private/` mirrors `Public/` without the module folder.
 - A `.cpp` includes its own header first.
@@ -151,8 +160,8 @@ CLAUDE.md holds the tag tables. Check against them; don't restate them here.
 - **Coverage (ERROR).** Every class, struct, union, function, namespace- or class-scope variable, enum, and enum value declared in a header has a comment. The scan can't see a missing one, so read every changed header declaration.
 - **Nothing extra (ERROR).** Namespaces, type aliases, macros, concepts, locals, and function bodies carry no comment, and a `.cpp` or `.inl` carries none besides its copyright line. The scan catches the `.cpp`/`.inl` case. Read the bodies of inline functions in headers yourself.
 - **Header comment (ERROR).** Present exactly when the header holds two or more top-level classes, structs, or unions, or none. It never lists the file's contents.
-- **Tags (ERROR).** Functions: summary, then `@tparam`, `@param`, `@return` (every non-void function), `@warning`, `@note`, each where it applies, in that order. An override has a one-line comment only. Classes, structs, unions: summary, then `@inherits` per direct base, the four always-required tags, and the conditional ones that apply, in table order. Enums: what it's for, and each value's meaning. A serialized enum carries the append-only `@warning`.
-- **Format (ERROR).** The scan checks the mechanical forms: `/** … */` on one line, the block shape, comments on their own lines, no `//` except the copyright line, no `@info`, and a blank line after every enum value but the last.
+- **Tags (ERROR).** Functions: summary, then `@tparam`, `@param`, `@return` (every non-void function), `@warning`, `@note`, each where it applies, in that order. An override, and a `= delete` function, has a one-line comment only. Classes, structs, unions: summary, then `@inherits` per direct base, the four always-required tags, and the conditional ones that apply, in table order. Enums: what it's for, and each value's meaning. A serialized enum carries the append-only `@warning`.
+- **Format (ERROR).** The scan checks the mechanical forms: `/** … */` on one line, the block shape, comments on their own lines, no `//` except the copyright line, no `@info`, a blank line after every enum value but the last, a blank line before every commented declaration, and none after an access specifier.
 - **Content (WARNING).** A comment that restates the code instead of saying why.
 - A comment the change made wrong is stale: a WARNING.
 - Every comment finding is `Owner: Claude`. Fix them before the next pass; they block "Review passed" like any other ERROR.
