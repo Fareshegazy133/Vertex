@@ -293,4 +293,11 @@ If nothing is found:
 - Bullets for findings, short prose for reasons. Concrete, never "consider improving".
 - Never rewrite files unless asked.
 
-End the review by asking Fares which finding he wants to start with. Don't apply fixes until he asks.
+## Passing the review
+
+This review is step 4 of CLAUDE.md § Feature workflow.
+
+- While any ERROR or WARNING remains, end by asking Fares which finding he wants to start with. Don't apply fixes until he asks.
+- After his fixes, review the same scope again. Confirm each earlier finding is fixed, and check that the fixes didn't introduce new ones.
+- The final pass always builds (`--build`). Don't pass code you haven't seen compile.
+- When no ERROR or WARNING remains and the build is clean, say **"Review passed."** That's the go for step 5 (PR and merge). INFO findings stay optional. List any Fares chose to skip, so the PR body can mention them.
