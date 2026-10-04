@@ -21,6 +21,7 @@ Fares is learning engine architecture by building Vertex. Review like a kind sen
 - He knows C++. Spend the explanation on the build and link model, MSVC warning traps, performance, API design, and engine architecture, not language basics.
 - Match depth to the system: a few lines for utilities (logging, small helpers), full depth for architecture (module boundaries, the platform seam, the RHI, reflection, the engine loop).
 - **Report, don't fix.** Engine C++ is his to change. For a non-trivial fix, offer a walkthrough card. Build files (`Build/`, `Scripts/`, `Vertex.lua`, `*.Module.lua`), docs, and this skill belong to Claude, so offer to fix those directly.
+- **Comments in engine C++ are Claude's chore too** (CLAUDE.md § Code style, Comments). Report a missing or stale comment as `Owner: Claude`, and add it after delivering the review. Never ask Fares to write one.
 
 ## Governing rules
 
@@ -113,6 +114,7 @@ Check every row of the table. The scan covers type, enum, template-parameter, ma
 - A `.cpp` or `.inl` defines its functions in the header's declaration order, with anonymous-namespace helpers above them. Compare the two files side by side.
 - Includes are written from the module's include root. Core's public headers live under `Public/Core/…`. `Private/` mirrors `Public/` without the module folder.
 - A `.cpp` includes its own header first.
+- By-value parameters are `const` in both the declaration and the definition (CLAUDE.md § Code style). The scan can't see this, so compare each changed signature in the `.h` and the `.cpp`.
 - Every header is self-sufficient: it includes what it uses (for example, `<string_view>` for `std::string_view`).
 - No unused includes. No unused forward declarations. In headers, prefer a forward declaration when only a pointer or reference is used.
 - New files live under `Source/<Module>/`, never in `Intermediate/`. Remind Fares to run `Setup.bat`.
@@ -144,9 +146,11 @@ Vertex builds at `/W4` with warnings as errors, plus C4062. Each item below is a
 - Third-party sources are pinned by tag and verified commit SHA, never a branch.
 - premake stays pinned. Flag an upgrade.
 
-### 11. Documentation
+### 11. Documentation (CLAUDE.md § Code style, Comments)
 - Comments explain why (intent, constraints, edge cases). They never restate the code.
-- A public API gets a short comment when its name and signature don't make the contract obvious: ownership, the lifetime of views, thread safety, when it may be called.
+- A public API gets a short comment when its name and signature don't make the contract obvious: ownership, the lifetime of views, thread safety, cost, when it may be called.
+- A comment the change made wrong is stale: a WARNING.
+- Every comment finding is `Owner: Claude`.
 - **Doc staleness (ERROR).** If the change adds or renames a module, command, define, folder, or convention, CLAUDE.md and `README.md` say so in the same change. A new module updates the module graph and the README table.
 
 ### 12. Git hygiene (CLAUDE.md § Git workflow)
