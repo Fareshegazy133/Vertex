@@ -12,8 +12,10 @@ enum class ELogLevel : std::uint8_t
 {
 	/** Normal operation worth recording: startup, shutdown, state changes. */
 	Info,
+
 	/** Something unexpected happened, and the engine recovered. */
 	Warning,
+
 	/** An operation failed, and its result is missing or wrong. */
 	Error
 };
