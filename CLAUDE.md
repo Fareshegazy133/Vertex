@@ -110,6 +110,7 @@ Core's public headers live under `Public/Core/…`, so includes read `#include "
 | Bool parameters | No `b` | `SetVSync(bool VSync)` |
 | Parameters | `In` only when the name would match a member; `Out` always on output parameters | `SetDesc(const VWindowDesc& InDesc)`, `bool& OutSucceeded` |
 | Free functions | Inside `namespace Vertex`; internals that a header must expose go inside `Vertex::Private`; helpers used by one `.cpp` only go in an anonymous namespace | `Vertex::InitializeRuntime()` |
+| Getters | `Get…` always succeeds: it returns a value or a reference, and asserts if it can't. `Find…` may come back empty: `nullptr`, an empty `std::optional`, or a not-found index. A `bool` getter asks a question and never starts with `Get` or `Find`. No `TryGet…`: a lookup that can fail is a `Find`. | `GetMode()`, `FindChild(Name)`, `IsVisible()` |
 | Constants | `constexpr`, PascalCase, never `#define` | `MaxLogLineLength` |
 | Macros | `V` prefix, UPPER_SNAKE. `VERTEX_*` and `<MODULE>_API` come from the build. | `VCLASS`, `V_DECLARE_CLASS` |
 | Files | Named after the main type, without its prefix | `TArray` → `Array.h` |
@@ -118,6 +119,7 @@ Why:
 - Types live at global scope, so their prefix is what keeps them from colliding with raylib's and Windows' unprefixed global names (`CloseWindow`, `DrawText`, …). Free functions have no prefix, so they live in `namespace Vertex`.
 - Macros are expanded by the preprocessor before namespaces exist, so a prefix is their only protection.
 - A method parameter with the same name as a member hides it ("shadowing"), which is warning C4458. At `/W4` with warnings as errors, that fails the build. Hence the `In` rule.
+- The `Find`/`Get` split tells a caller from the name alone whether the result needs a null check. UE's containers follow it: `TLruCache::Find` returns `nullptr` for a missing key, while `FindChecked` asserts.
 
 ### File layout
 
@@ -133,32 +135,130 @@ Every `.h`, `.cpp`, and `.inl` starts with the copyright line. Headers follow it
 
 A `.cpp` includes its own header first. If that header is missing an include it needs, it fails right there instead of somewhere unrelated, which keeps every header self-sufficient.
 
-### Declaration order (agreed in M0 step 7)
+### Declaration order (agreed in M0 step 7, extended 2026-10-04)
 
-Inside a class or struct, declarations come in three groups, in this order: **types, then functions, then variables**, never interleaved. Each group runs its own `public` → `protected` → `private` sequence, so a group re-states an access specifier even when the previous group ended on the same one. Two adjacent `private:` sections are correct, not redundant. Static data members and callbacks (a `std::function` member, for example) count as variables.
+Inside a class, struct, or union, declarations come in three groups, in this order: **types, then functions, then variables**, never interleaved. Each group runs its own `public` → `protected` → `private` sequence, so a group re-states an access specifier even when the previous group ended on the same one. Two adjacent `private:` sections are correct, not redundant. Static data members and callbacks (a `std::function` member, for example) count as variables.
 
 Types come first because C++ only lets a function signature use a type declared above it. A nested type placed among the variables fails to compile (C3646) as soon as a function takes or returns it.
 
+#### Types
+
+Macros come first, above the first access specifier. A generated-body macro declares members and switches the access level itself, the way UE's `GENERATED_BODY()` does, so it has to open the class. Then aliases and nested types, each declared before anything that uses it.
+
+#### Functions
+
+In each access section, functions come in this order:
+
+| # | Row | What belongs here |
+|---|---|---|
+| 1 | Default constructor | The constructor with no parameters |
+| 2 | Other constructors | Your own parameter lists, then copy, then move |
+| 3 | Destructor | |
+| 4 | Virtual | `virtual` or `override`. New virtuals first, then overrides grouped by base class, in the order the bases are declared |
+| 5 | Static | `static` |
+| 6 | Template | `template<…>` |
+| 7 | Normal | Core work: everything that isn't a getter |
+| 8 | Setters | `Set…` |
+| 9 | Other getters | Getters that return something other than `bool`, without a `Get` or `Find` prefix: `Num()`, `Length()` |
+| 10 | Find getters | `Find…` |
+| 11 | Get getters | `Get…` |
+| 12 | Bool getters | `IsValid()`, `HasFocus()`, `Contains(Value)` |
+| 13 | Operators | In the operator order below |
+
+- Constructors, the destructor, and operators are recognised by their syntax and always go in their own rows. Every other function goes in the **first** of rows 4–12 that it fits, so `virtual bool IsValid() const` lands in row 4.
+- `= default` and `= delete` versions sit where the real function would.
+- Within a row, related functions stay together (`Open` beside `Close`) instead of sorted alphabetically. A `const` and non-`const` overload pair stays adjacent, `const` version first.
+
+**A getter reads; it doesn't act.** It's `const`, has no output parameters, and its name is a question or a noun. A function that changes the object, or whose name is an action, is normal, even when it's `const` or returns `bool`:
+- `bool AddItem(VItem* Item)` changes the object, so it's normal.
+- `VBounds ComputeBounds() const` is named for an action, so it's normal.
+- A `const` getter that caches its result in a `mutable` member is still a getter: callers can't observe the change.
+
+**Operators** come in this order:
+1. Assignment: `=`, copy then move.
+2. Compound assignment: `+=`, `-=`, `*=`, `/=`, then any others in the order `%=`, `&=`, `|=`, `^=`, `<<=`, `>>=`.
+3. Their binary partners, in the same order: `+`, `-`, `*`, `/`, then `%`, `&`, `|`, `^`, `<<`, `>>`.
+4. Comparison: `==`, then `<=>`, then any written by hand. In C++20 the compiler writes `!=`, `<`, `<=`, `>`, and `>=` from those two.
+5. Subscript `[]`, then call `()`.
+6. Any other operator: unary `-` and `!`, `++`, `--`, `->`, dereference `*`, and so on.
+7. Conversion operators: `operator bool()`, `operator VColor()`, and so on. The type after `operator` is the return type.
+
+#### Variables
+
+Variables follow `public` → `protected` → `private`. Their order within an access section isn't decided yet (see Decided when first needed).
+
+#### Example
+
 ```cpp
+/**
+ * The application's OS window. It owns the native window and presents each rendered frame.
+ *
+ * @ownership Owned by the engine loop. Non-copyable: it owns the native window handle.
+ * @lifetime Valid from construction to destruction.
+ * @threading Game thread only.
+ * @networking Local only. A dedicated server never creates one.
+ * @backend Backend-neutral. The raylib translation lives in Platform/Raylib.
+ */
 class RUNTIME_API VWindow
 {
 public:
+	/** How the window occupies the screen. */
 	enum class EMode : std::uint8_t
 	{
+		/** A movable, resizable window with OS decorations. */
 		Windowed,
+
+		/** Covers one monitor exclusively. */
 		Fullscreen
 	};
 
 public:
+	/**
+	 * Opens the native window.
+	 *
+	 * @param InDesc The size and title to open with.
+	 */
 	explicit VWindow(const VWindowDesc& InDesc);
 
+	/** Deleted: two copies would close the same native window. */
+	VWindow(const VWindow&) = delete;
+
+	/** Closes the native window. */
+	~VWindow();
+
+	/**
+	 * Switches between windowed and fullscreen.
+	 *
+	 * @param InMode The mode to switch to.
+	 */
+	void SetMode(const EMode InMode);
+
+	/**
+	 * Reports how the window occupies the screen.
+	 *
+	 * @return Windowed until SetMode switches it.
+	 */
 	EMode GetMode() const;
 
+	/**
+	 * Reports whether the user asked to close the window.
+	 *
+	 * @return True from the frame the close button is pressed until the window is destroyed.
+	 */
+	bool ShouldClose() const;
+
+	/** Deleted, like the copy constructor. */
+	VWindow& operator=(const VWindow&) = delete;
+
 private:
+	/** Pushes Desc to the native window after a change. */
 	void ApplyDesc();
 
 private:
+	/** The size and title the window was opened with. */
 	VWindowDesc Desc;
+
+	/** The current mode. Only SetMode writes it. */
 	EMode Mode = EMode::Windowed;
 };
 ```
@@ -167,6 +267,8 @@ A `.cpp` (or `.inl`) defines its functions in the order the header declares them
 
 Why:
 - A reader finds the whole API in one block and the whole state in another. The variables block shows what the object owns at a glance.
+- The fixed function order tells a reader where to look: how to make and destroy one first, then the dispatch-heavy functions, the core work, the read-only API, and the operators last.
+- "First matching row wins" means two people sort the same class the same way.
 - Matching order lets you read the `.h` and the `.cpp` side by side. A new function lands in the same place in both files, which keeps diffs predictable.
 
 ### Comments
@@ -197,6 +299,7 @@ Never commented: namespaces, type aliases, macros, concepts, local variables, an
 
 - A comment with any tag, or one too long for one line, uses the block form: `/**` alone on its line, then ` * ` lines, then ` */` alone.
 - A comment sits on its own line, directly above what it describes.
+- One blank line separates every commented declaration from the one before it: functions, variables, nested types, and enum values, in classes and namespaces alike. A comment directly after an opening `{`, an access specifier (`public:`), or an `#if` line needs none, and no blank line follows an access specifier.
 - Tags follow one another with no blank lines between them. One space separates a tag from its text, with no column alignment: aligned columns get re-padded whenever a longer name arrives, which turns one-line changes into noisy diffs.
 - The copyright line, which opens every `.h`, `.cpp`, and `.inl`, is the only `//` comment in the codebase.
 
@@ -216,7 +319,7 @@ A short summary of what the function does, then these tags, in this order:
 | `@warning` | Each thing a caller can get wrong that causes an error: a precondition, an invalidated pointer, the wrong thread |
 | `@note` | Each thing a caller should know that won't cause an error: cost, flushing, ordering |
 
-An override gets only a one-line comment saying what differs from the base version. The base's comment holds the contract.
+An override gets only a one-line comment saying what differs from the base version. The base's comment holds the contract. A `= delete` function gets only a one-line comment saying why it's deleted: it can't be called, so it has no tags.
 
 ```cpp
 /**
@@ -309,7 +412,7 @@ Why:
 
 ### Decided when first needed
 
-Concepts, interfaces, global variables, and type aliases. The M2 port has to rename the old `using TSize = size_t;`, which now reads like a class template.
+Concepts, interfaces, global variables, type aliases, and the order of member variables within an access section. The M2 port has to rename the old `using TSize = size_t;`, which now reads like a class template.
 
 ## Feature workflow
 
