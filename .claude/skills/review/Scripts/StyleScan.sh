@@ -116,6 +116,8 @@ for File in "${Files[@]}"; do
 	fi
 
 	Output=$(awk -v File="$File" -v Kind="$Kind" -v OwnHeader="$OwnHeader" -v MissingFinalNewline="$MissingFinalNewline" '
+		# This program sits in a single-quoted bash string: an apostrophe anywhere in it,
+		# comments included, ends the string and breaks the script.
 		function Hit(Rule, Line, Text)
 		{
 			Count[Rule]++
@@ -195,6 +197,7 @@ for File in "${Files[@]}"; do
 				Stripped = Raw
 				sub(/^[ \t]+/, "", Stripped)
 				sub(/[ \t]+$/, "", Stripped)
+				StartsComment = (!BlockComment && Stripped ~ /^\/\*/)
 				LineHasComment = BlockComment
 				if (BlockComment)
 				{
@@ -323,6 +326,20 @@ for File in "${Files[@]}"; do
 					InEnum = (Trimmed ~ /\{$/)
 					AfterEnumValue = 0
 				}
+				# One blank line before every commented declaration, except right after an
+				# opening brace, an access specifier, or an #if (CLAUDE.md "Comments", Format).
+				# Enum values are left to the enum check above, so no line is reported twice.
+				IsAccessSpecifier = (PrevStripped ~ /^(public|protected|private)[ \t]*:$/)
+				if (StartsComment && !InEnum && PrevStripped != "" && PrevStripped != "{" && !IsAccessSpecifier && PrevStripped !~ /^#[ \t]*(if|ifdef|ifndef|elif|else)([^A-Za-z]|$)/)
+				{
+					Hit("Spacing: one blank line before every commented declaration", N, Raw)
+				}
+				if (IsAccessSpecifier && Stripped == "")
+				{
+					Hit("Spacing: no blank line after an access specifier", N - 1, PrevRaw)
+				}
+				PrevStripped = Stripped
+				PrevRaw = Raw
 				if (FirstCode == "" && Trimmed != "")
 				{
 					FirstCode = Trimmed
