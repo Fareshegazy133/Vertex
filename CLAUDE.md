@@ -181,7 +181,7 @@ Every declaration in a header, `Public/` or `Private/`, with no exceptions:
 - variables at namespace or class scope: members, statics, globals, and constants;
 - enums, and every enum value.
 
-Never commented: namespaces, type aliases, macros, concepts, local variables, and anything that lives only in a `.cpp` (its helper functions, types, and file-local variables).
+Never commented: namespaces, type aliases, macros, concepts, local variables, anything inside a function body, and anything in a `.cpp` or `.inl` besides its copyright line (see Implementation code below).
 
 #### Format
 
@@ -198,7 +198,7 @@ Never commented: namespaces, type aliases, macros, concepts, local variables, an
 - A comment with any tag, or one too long for one line, uses the block form: `/**` alone on its line, then ` * ` lines, then ` */` alone.
 - A comment sits on its own line, directly above what it describes.
 - Tags follow one another with no blank lines between them. One space separates a tag from its text, with no column alignment: aligned columns get re-padded whenever a longer name arrives, which turns one-line changes into noisy diffs.
-- The copyright line is the only `//` comment in the codebase.
+- The copyright line, which opens every `.h`, `.cpp`, and `.inl`, is the only `//` comment in the codebase.
 
 #### Content
 
@@ -260,7 +260,24 @@ class RUNTIME_API VWindow
 
 #### Enums
 
-The enum's comment says what it's used for. Each value's comment says what that value represents. An enum that is saved to disk or sent over the network also carries `@warning Values are serialized: append new ones at the end; never reorder or remove.` Reordering one silently breaks old save files, and clients running another version.
+The enum's comment says what it's used for. Each value's comment says what that value represents. One blank line follows every value except the last, so each comment visibly belongs to the value below it, not the one above.
+
+```cpp
+/** How severe a log line is. It picks the line's prefix and the stream it goes to. */
+enum class ELogLevel : std::uint8_t
+{
+	/** Normal operation worth recording: startup, shutdown, state changes. */
+	Info,
+
+	/** Something unexpected happened, and the engine recovered. */
+	Warning,
+
+	/** An operation failed, and its result is missing or wrong. */
+	Error
+};
+```
+
+An enum that is saved to disk or sent over the network also carries `@warning Values are serialized: append new ones at the end; never reorder or remove.` Reordering one silently breaks old save files, and clients running another version.
 
 #### Header comments
 
@@ -276,9 +293,12 @@ The file comment sits between the copyright line and `#pragma once`. It says wha
 #pragma once
 ```
 
-#### Inside `.cpp` files and function bodies
+#### Implementation code
 
-Avoid comments. Write one only when a careful reader could get the code wrong without it: a load-bearing line, a workaround, or a return the compiler requires but that should never run. The same formats apply.
+`.cpp` and `.inl` files carry no comments besides the copyright line, and no function body carries one, wherever it lives. The knowledge an implementation line depends on goes somewhere sturdier:
+- **If a caller relies on it, the header states it as a contract** (`@note`, `@warning`). `Log`'s notes promise whole lines and a flush on every call. Deleting the `fflush` would break that documented promise, which is what stops a later edit.
+- **If the compiler enforces it, nothing is needed.** A return after an exhaustive `switch` (C4715) can't be deleted without failing the build.
+- **Otherwise, the commit message says why.** `git log -L` and `git blame` find it next to the line's history.
 
 Block comments don't nest. A `/* … */` wrapped around code that contains a doc comment ends at that comment's `*/`. Disable code with `#if 0` … `#endif` instead.
 
