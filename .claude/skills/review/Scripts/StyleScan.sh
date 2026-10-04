@@ -176,29 +176,82 @@ for File in "${Files[@]}"; do
 				}
 			}
 
-			# Strip comments before the code checks. Naive about comment markers inside strings.
+			# Strip comments before the code checks, checking their format on the way
+			# (CLAUDE.md "Comments"). Naive about comment markers inside strings.
 			Code = Raw
 			if (Kind == "cpp")
 			{
+				Stripped = Raw
+				sub(/^[ \t]+/, "", Stripped)
+				sub(/[ \t]+$/, "", Stripped)
 				if (BlockComment)
 				{
 					if (Code ~ /\*\//)
 					{
+						if (Stripped != "*/")
+						{
+							Hit("Comments: a block comment closes with */ alone on its line", N, Raw)
+						}
 						sub(/^.*\*\//, "", Code)
 						BlockComment = 0
 					}
 					else
 					{
+						if (Stripped !~ /^\*( |$)/)
+						{
+							Hit("Comments: each line inside a block comment starts with \" * \"", N, Raw)
+						}
 						Code = ""
 					}
 				}
-				gsub(/\/\*.*\*\//, "", Code)
-				if (Code ~ /\/\*/)
+				# Whichever marker comes first decides: "// a /* b" is a line comment.
+				HadComment = 0
+				while (1)
 				{
-					sub(/\/\*.*$/, "", Code)
+					LinePos = index(Code, "//")
+					BlockPos = index(Code, "/*")
+					if (LinePos > 0 && (BlockPos == 0 || LinePos < BlockPos))
+					{
+						if (N != 1)
+						{
+							Hit("Comments: // comment (use /** */; only the copyright line uses //)", N, Raw)
+						}
+						Code = substr(Code, 1, LinePos - 1)
+						break
+					}
+					if (BlockPos == 0)
+					{
+						break
+					}
+					Rest = substr(Code, BlockPos)
+					# The classic C-comment pattern: the shortest /* ... */, which awk has no lazy quantifier for.
+					if (match(Rest, /^\/\*([^*]|\*+[^*\/])*\*+\//))
+					{
+						Comment = substr(Rest, 1, RLENGTH)
+						if (Comment !~ /^\/\*\* [^ ](.*[^ ])? \*\/$/)
+						{
+							Hit("Comments: a one-line comment is /** Description */", N, Raw)
+						}
+						Code = substr(Code, 1, BlockPos - 1) substr(Rest, RLENGTH + 1)
+						HadComment = 1
+						continue
+					}
+					if (Rest !~ /^\/\*\*[ \t]*$/ || substr(Code, 1, BlockPos - 1) ~ /[^ \t]/)
+					{
+						Hit("Comments: a block comment opens with /** alone on its line", N, Raw)
+					}
+					Code = substr(Code, 1, BlockPos - 1)
 					BlockComment = 1
+					break
 				}
-				sub(/\/\/.*$/, "", Code)
+				if (HadComment && Code ~ /[^ \t]/)
+				{
+					Hit("Comments: a comment sits on its own line, above what it describes", N, Raw)
+				}
+				if (Raw ~ /@info([^A-Za-z0-9_]|$)/)
+				{
+					Hit("Comments: @info tag (use @note)", N, Raw)
+				}
 			}
 			else
 			{

@@ -147,10 +147,15 @@ Vertex builds at `/W4` with warnings as errors, plus C4062. Each item below is a
 - premake stays pinned. Flag an upgrade.
 
 ### 11. Documentation (CLAUDE.md § Code style, Comments)
-- Comments explain why (intent, constraints, edge cases). They never restate the code.
-- A public API gets a short comment when its name and signature don't make the contract obvious: ownership, the lifetime of views, thread safety, cost, when it may be called.
+CLAUDE.md holds the tag tables. Check against them; don't restate them here.
+- **Coverage (ERROR).** Every class, struct, union, function, namespace- or class-scope variable, enum, and enum value declared in a header has a comment. The scan can't see a missing one, so read every changed header declaration.
+- **Nothing extra (ERROR).** Namespaces, type aliases, macros, concepts, locals, and anything that lives only in a `.cpp` carry no comment.
+- **Header comment (ERROR).** Present exactly when the header holds two or more top-level classes, structs, or unions, or none. It never lists the file's contents.
+- **Tags (ERROR).** Functions: summary, then `@tparam`, `@param`, `@return` (every non-void function), `@warning`, `@note`, each where it applies, in that order. An override has a one-line comment only. Classes, structs, unions: summary, then `@inherits` per direct base, the four always-required tags, and the conditional ones that apply, in table order. Enums: what it's for, and each value's meaning. A serialized enum carries the append-only `@warning`.
+- **Format (ERROR).** The scan checks the mechanical forms: `/** … */` on one line, the block shape, comments on their own lines, no `//` except the copyright line, and no `@info`.
+- **Content (WARNING).** A comment that restates the code instead of saying why. A `.cpp` or function-body comment that isn't needed is an INFO.
 - A comment the change made wrong is stale: a WARNING.
-- Every comment finding is `Owner: Claude`.
+- Every comment finding is `Owner: Claude`. Fix them before the next pass; they block "Review passed" like any other ERROR.
 - **Doc staleness (ERROR).** If the change adds or renames a module, command, define, folder, or convention, CLAUDE.md and `README.md` say so in the same change. A new module updates the module graph and the README table.
 
 ### 12. Git hygiene (CLAUDE.md § Git workflow)
