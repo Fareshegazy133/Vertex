@@ -1,6 +1,6 @@
 # M0 card 2: HeaderTool `main()`
 
-**Status:** done 2026-10-08. Both cards implemented; `/review --build` passed.
+**Status:** done 2026-10-08. Both cards implemented; `/review --build` passed; `Run` made `[[nodiscard]]` after review.
 
 Branch `feature/m0-headertool-main`. Repo copy of this plan: `.claude/plans/m0-headertool-main.md`.
 
@@ -60,7 +60,7 @@ Paths are relative to `C:\Developer Projects\HNDREDGAMES\UE_5_7_4\Engine\Source\
   - Only a *top-level* `const` is allowed on `main`'s parameters. `char* const* ArgV` would change `main`'s type, which makes it non-standard.
   - The `ArgC == 0` guard, and the reason `subspan(1)` needs it.
   - The `char**` → `std::span<const char* const>` conversion. Compile-check it on MSVC 14.44 before presenting the card.
-- **Includes:** add `<span>` and `<cstddef>`.
+- **Includes:** add `<span>`. (`<cstddef>` was dropped in the final code: `<cstdlib>` already declares `std::size_t`.)
 - **Verify:** all three configurations build with zero warnings, then this matrix (PowerShell, `Binaries\Win64-Debug\`):
 
 | Command | Prints | `$LASTEXITCODE` |

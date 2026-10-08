@@ -1,13 +1,12 @@
 // Copyright HNDRED GAMES. All Rights Reserved.
 
 #include "Core/Logging/Log.h"
-#include <cstddef>
 #include <cstdlib>
 #include <span>
 
 namespace
 {
-	int Run(const std::span<const char* const> Arguments)
+	[[nodiscard]] int Run(const std::span<const char* const> Arguments)
 	{
 		if (Arguments.size() != 1)
 		{
