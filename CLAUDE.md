@@ -412,7 +412,7 @@ Why:
 
 ### Decided when first needed
 
-Concepts, interfaces, global variables, type aliases, and the order of member variables within an access section. The M2 port has to rename the old `using TSize = size_t;`, which now reads like a class template.
+Concepts, interfaces, global variables, type aliases, and the order of member variables within an access section. Type aliases come up first, in M2's core types: a size alias named `TSize` would read like a class template under these rules.
 
 ## Feature workflow
 
@@ -459,6 +459,6 @@ The `unreal-api` MCP indexes UE's gameplay-facing C++ API (`AActor`, `UGameplayS
 - Never use it to verify Vertex code. Vertex's APIs and includes come from this repo.
 - If the MCP and the local source disagree, the local source wins: 5.7.4 is the version Vertex studies.
 
-## Porting the earlier Vertex
+## The earlier Vertex
 
-The earlier attempt lives read-only at `C:\Developer Projects\Raylib Projects\Tagbound\Vertex`. Port pieces deliberately, one system at a time, through the rules above. Never bulk-copy. Tagbound pins that repo as a submodule, so never force-push it.
+The earlier attempt survives only as a skeleton in the private GitHub repo `Fareshegazy133/Vertex-Legacy`: one commit (`f2d1c84`) holding premake scripts and empty `EngineStartup()`/`EngineShutdown()` stubs. Its local copy, Core types included, was deleted on 2026-10-08, so every system is written fresh under the rules above. Read the repo for history only. It's the last record of that attempt, so never rewrite its history.

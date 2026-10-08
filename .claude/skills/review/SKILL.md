@@ -186,7 +186,7 @@ One to three specific strengths, and why each matters.
 - Would it block a dedicated server without Render, a second graphics backend, or runtime-loaded plugins? Those are the promotion triggers, so they're the futures Vertex is designed for.
 - The platform seam: would swapping raylib for another backend touch anything outside `Platform/Raylib/`?
 - Public surface: what's in `Public/` that could be in `Private/`? Every public symbol is a promise to consumers.
-- Ported code (from `Tagbound/Vertex`) comes over one system at a time, rewritten through today's rules. Flag bulk copies and old conventions, such as `V`-prefixed templates or `TSize` (CLAUDE.md § Porting the earlier Vertex).
+- Nothing is ported: the earlier Vertex survives only as a skeleton (CLAUDE.md § The earlier Vertex). Flag code that looks pasted from elsewhere, UE above all (CLAUDE.md § Unreal Engine reference: study, never copy), and conventions the naming table has replaced, such as `V`-prefixed templates or a `TSize` alias.
 
 ### Ownership & lifetime
 - For every new piece of state: who owns it, who may change it, and who needs to see it?
