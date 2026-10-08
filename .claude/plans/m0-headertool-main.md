@@ -1,6 +1,6 @@
 # M0 card 2: HeaderTool `main()`
 
-**Status:** approved 2026-10-04. In progress: Card 1.
+**Status:** done 2026-10-08. Both cards implemented; `/review --build` passed.
 
 Branch `feature/m0-headertool-main`. Repo copy of this plan: `.claude/plans/m0-headertool-main.md`.
 
@@ -42,10 +42,10 @@ Paths are relative to `C:\Developer Projects\HNDREDGAMES\UE_5_7_4\Engine\Source\
 
 `HeaderTool.Module.lua` needs no change. The `.cpp` has no header, and its only comment is the copyright line (CLAUDE.md § Implementation code). The *why* behind the `argc == 0` guard goes in the commit message.
 
-## Cards (one at a time; Fares writes the C++)
+## Cards (one at a time; Fares writes the C++; no check-in questions since 2026-10-05)
 
-### Card 1: the first link
-- **What:** `HeaderToolMain.cpp` with an `int main()` that has no parameters and returns `Run()`. `Run()` logs `[Info] Nothing to generate yet: reflection arrives in M5.` and returns `EXIT_SUCCESS`.
+### Card 1: the first link (done)
+- **What:** `HeaderToolMain.cpp` with an `int main()` that has no parameters and returns `Run()`. `Run()` logs `[Info] Nothing to generate yet: reflection arrives in M5` and returns `EXIT_SUCCESS`.
 - **Why:** this is the smallest slice that makes the linker resolve `Vertex::Log` from `VertexCore.lib`. Parameters wait for card 2, because an unused `ArgC`/`ArgV` would be C4100, an error at `/W4` with warnings as errors.
 - **Includes:** `"Core/Logging/Log.h"`, `<cstdlib>`.
 - **Verify:**
@@ -53,9 +53,8 @@ Paths are relative to `C:\Developer Projects\HNDREDGAMES\UE_5_7_4\Engine\Source\
   2. Build `Intermediate\ProjectFiles\HeaderTool.vcxproj` with MSBuild in Debug, Development, and Shipping. Expect `0 Warning(s)` and `0 Error(s)`. The project reference builds Core first.
   3. `.\Binaries\Win64-Debug\VertexHeaderTool.exe; $LASTEXITCODE` should print the Info line, then `0`.
   4. `dumpbin /dependents` on the exe (MSVC 14.44 `bin\Hostx64\x64\dumpbin.exe`) should list only the CRT and KERNEL32: no `opengl32`, `winmm`, or `gdi32`.
-- **Check-in:** why is "no winmm in HeaderTool" guaranteed by the module graph rather than by luck? Point at the function in `Build/Premake/Modules.lua` that decides it.
 
-### Card 2: the boundary and the contract
+### Card 2: the boundary and the contract (done)
 - **What:** `main(const int ArgC, char** const ArgV)` builds the argument span without the program name and returns `Run(Arguments)`. `Run(const std::span<const char* const> Arguments)` applies the contract: `size() != 1` → `[Error] Expected one argument. Usage: VertexHeaderTool <ManifestPath>`, then `EXIT_FAILURE`. Otherwise it logs the Info line and returns `EXIT_SUCCESS`.
 - **Traps to teach on the card:**
   - Only a *top-level* `const` is allowed on `main`'s parameters. `char* const* ArgV` would change `main`'s type, which makes it non-standard.
@@ -72,7 +71,6 @@ Paths are relative to `C:\Developer Projects\HNDREDGAMES\UE_5_7_4\Engine\Source\
 | `VertexHeaderTool.exe Fake.json >$null` | nothing | 0 |
 | `VertexHeaderTool.exe A B` | the Error line | 1 |
 
-- **Check-in:** in M5, MSBuild runs HeaderTool as a pre-build step. What does MSBuild do with the build when we return `EXIT_FAILURE`, and where does our Error line end up?
 
 ## After the cards (feature workflow steps 4–6)
 
