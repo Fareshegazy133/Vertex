@@ -14,7 +14,7 @@ namespace
 			return EXIT_FAILURE;
 		}
 
-		Vertex::Log(ELogLevel::Info, "Nothing to generate yet: reflection arrives in M5");
+		Vertex::Log(ELogLevel::Info, "Nothing to generate yet: reflection arrives in M3");
 		return EXIT_SUCCESS;
 	}
 }
