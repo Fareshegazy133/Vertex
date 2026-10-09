@@ -14,12 +14,16 @@ Working mode: Fares is learning engine architecture by building it.
 raylib (ThirdParty, C) ←─private── Runtime ──public──→ Core
                                      ↑                   ↑
                                   Editor            HeaderTool
+
+doctest (ThirdParty) ←─private── CoreTests ──private──→ Core
 ```
 
 - **Core**: types, containers, memory, strings/names, math, logging, asserts. **No** platform, windowing, rendering, or generated (reflection) code.
 - **Runtime**: platform, input, rendering, scene, engine loop. The only module that depends on raylib, and **privately**.
 - **Editor**: application. Depends on Runtime only.
 - **HeaderTool**: application. Depends on **Core only**. It generates code that Runtime compiles, so depending on Runtime would create a build cycle.
+- **CoreTests**: test application for Core. Depends on Core and doctest only (see Tests).
+- **doctest**: the unit-test framework. Only test applications depend on it; a module that ships never does.
 - A **public** dependency's headers are visible to my consumers; a **private** one's are visible only to me. Link requirements still flow up to the executable; include paths do not.
 - Runtime never depends on Editor.
 
@@ -65,6 +69,7 @@ A folder never includes a folder above it. Promote a folder to its own module **
 | Delete generated output (keeps fetched sources) | `Scripts\Clean.bat` |
 | Build everything | `& "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe" Vertex.sln -m -p:Configuration=<Debug\|Development\|Shipping> -p:Platform=x64` |
 | Build one project | Same, but pass `Intermediate\ProjectFiles\<Module>.vcxproj` instead of the `.sln`. Solution folders make `-t:<Name>` awkward. |
+| Run Core's tests | `Binaries\Win64-<Config>\VertexCoreTests.exe`. Exits non-zero if any test fails. Add `-tc="TArray:*"` to run only the matching test cases. |
 
 - Solution project names are the module names (`Core`, `Runtime`, …). Output files are prefixed: `VertexEditor.exe`, `VertexCore.lib`.
 - Executables go to `Binaries\Win64-<Config>\`, libraries to `Intermediate\Build\<Config>\<Module>\`.
@@ -93,6 +98,19 @@ Core's public headers live under `Public/Core/…`, so includes read `#include "
 Runtime's public headers sit directly under `Public/`, one folder per layer: `#include "Engine/Engine.h"`. Each layer folder is a module-in-waiting (see Runtime layering), so its name already says where a header comes from, and the include survives the folder's promotion to a module unchanged.
 
 `Private/` mirrors `Public/` **without** the module folder: `Private/Logging/Log.cpp`, and private headers are included as `"Logging/Foo.h"`. Only the module itself sees `Private/`. In Core, a private include never looks like a public one. In Runtime it can, because neither side has a module folder: `"Platform/PlatformInit.h"` is private and `"Engine/Engine.h"` is public. So a Runtime private header never shares its path with a public one. Both folders are on Runtime's include path, the first match wins, and the other header is skipped without a warning.
+
+## Tests
+
+Each module's unit tests build into their own console application at `Source/Tests/<Module>Tests/`, on doctest. CoreTests is the first.
+
+- **Tests live in the test application, never in the module.** A linker only pulls an `.obj` out of a static library when something references it. Nothing references a self-registering test, so it would vanish without an error. UE keeps its low-level tests in separate programs too (`Programs/LowLevelTests/`).
+- **A test application depends privately on the module it tests and on doctest, nothing more.** CoreTests can't include a Runtime header, so a Core test can't lean on the platform.
+- **Files mirror the header they test**, under `Private/`, named `<File>Tests.cpp`: `Core/Containers/Array.h` is tested by `Private/Containers/ArrayTests.cpp`. A test of something with no header, such as the build configuration, sits at the root of `Private/`.
+- **Test case names read `"<Subject>: <expected behavior>"`**: `TEST_CASE("TArray: Add keeps existing elements when it grows")`. The subject lets `-tc="TArray:*"` run one type's tests.
+- **`CHECK` by default; `REQUIRE` only when the rest of the test can't run after a failure**, such as before dereferencing a pointer the test just checked. A failed `CHECK` is recorded and the test carries on, so one run reports every broken expectation.
+- doctest's macros (`TEST_CASE`, `CHECK`, `REQUIRE`) keep their upstream names. The `V` prefix rule covers Vertex's own macros, and doctest's only exist inside test applications.
+- A test file is a `.cpp`, so it carries no comments besides the copyright line. The test case name says what it proves.
+- Tests build and pass in all three configurations. Shipping matters most: it's the code that ships, and the only configuration with asserts compiled out.
 
 ## Code style
 
@@ -423,7 +441,7 @@ Concepts, interfaces, global variables, type aliases, and the order of member va
 Every feature runs the same cycle, in one conversation. Fares clears the chat between features, so anything the next conversation needs is saved before the cycle ends.
 
 1. **Plan together.** Discuss the problem, the design forks, and the UE counterpart. Claude recommends; Fares makes the calls.
-2. **Write the plan.** Claude cuts a `feature/<milestone>-<topic>` branch and writes the plan to `.claude/plans/<milestone>-<topic>.md`. The plan covers the decisions and why, the files to create or change, the walkthrough cards in dependency order, and how to verify. Fares reviews it. Nothing is implemented until he approves.
+2. **Write the plan.** Claude cuts a `feature/<milestone>-<topic>` branch and writes the plan to `.claude/plans/<milestone>-<topic>.md`. The plan covers the decisions and why, the files to create or change, the walkthrough cards in dependency order, the tests that prove it, and how to verify. Fares reviews it. Nothing is implemented until he approves.
 3. **Implement, one card at a time.** Claude walks Fares through each card (user-level CLAUDE.md, Mentorship Mode rule 7). Fares writes the engine C++. Claude does the chores.
 4. **Review.** When Fares says the feature is done, Claude runs `/review`. Fares fixes every ERROR and WARNING, and Claude reviews again until it says **"Review passed."**
 5. **PR and merge.** Claude commits, raises the PR, and merges it once Fares has read the diff and says go (see Git workflow).
@@ -433,12 +451,12 @@ The plan is committed on the feature branch, so the PR carries the design and a 
 
 ## Git workflow (GitHub Flow)
 
-- **`master` is always green.** It generates and builds in every configuration. Work never lands on it directly; it arrives through pull requests.
+- **`master` is always green.** It generates, builds, and passes its tests in every configuration. Work never lands on it directly; it arrives through pull requests.
 - **One short-lived branch per piece of work**, cut from the latest `master`:
   - `feature/<milestone>-<topic>` for new work, e.g. `feature/m0-engine-skeleton`
   - `fix/<topic>`, `chore/<topic>` (build, tooling, cleanup), `docs/<topic>`
 - **Commit messages:** an imperative summary of at most 72 characters ("Add Core logging", not "Added…"), a blank line, then *why* in the body.
-- **Pull requests into `master`** merge with **squash**, and the branch is deleted. Claude raises and merges PRs as a chore, with the `gh` CLI, after verifying the build. `chore/` and `docs/` PRs hold Claude-owned work and merge once verified. `feature/` and `fix/` PRs hold Fares' engine code: Fares reads the diff first, and Claude merges when he says go.
+- **Pull requests into `master`** merge with **squash**, and the branch is deleted. Claude raises and merges PRs as a chore, with the `gh` CLI, after verifying the build and the tests. `chore/` and `docs/` PRs hold Claude-owned work and merge once verified. `feature/` and `fix/` PRs hold Fares' engine code: Fares reads the diff first, and Claude merges when he says go.
 - **Milestones are tagged** on `master` when complete: `m0`, `m1`, …
 - Never force-push `master`. Never commit generated files (`Binaries/`, `Intermediate/`, `Vertex.sln`, `ThirdParty/*/Source/`).
 
