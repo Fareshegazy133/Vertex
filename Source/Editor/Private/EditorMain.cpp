@@ -7,6 +7,6 @@
 int main()
 {
 	Vertex::InitializeEngine();
-	Vertex::Log(ELogLevel::Info, "Editor running. Window arrives in M1");
+	Vertex::Log(ELogLevel::Info, "Editor running. Window arrives in M2");
 	return EXIT_SUCCESS;
 }
