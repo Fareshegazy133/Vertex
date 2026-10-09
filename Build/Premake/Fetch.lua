@@ -95,7 +95,10 @@ local function FetchModule(Module)
 
 	if State == "Missing" then
 		print(("  %-12s cloning %s ..."):format(Module.Name, Source.Tag))
-		local Output, Cloned = Run(("git -c advice.detachedHead=false clone --depth 1 --branch %s %s %s")
+		-- core.longpaths: raylib ships deep Android project folders. Under a long base path they pass
+		-- Windows' 260-character limit, and git refuses to create them. --config stores the setting in
+		-- the new clone, so the later status, fetch, and checkout calls inherit it.
+		local Output, Cloned = Run(("git -c advice.detachedHead=false clone --config core.longpaths=true --depth 1 --branch %s %s %s")
 			:format(Source.Tag, Source.Git, Quote(Dir)))
 		if not Cloned then
 			Fail("Cloning " .. Module.Name .. " failed:\n" .. Output)
