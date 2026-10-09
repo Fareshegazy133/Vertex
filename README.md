@@ -2,7 +2,7 @@
 
 A small C++20 game engine. raylib is the first backend, but it's hidden behind engine-owned interfaces so it can be replaced later (OpenGL, Vulkan, …) without touching engine or editor code.
 
-> **Status:** M0. Core logging and the HeaderTool entry point build; Runtime and the Editor get their first code next.
+> **Status:** M0. The whole solution builds, and `VertexEditor` starts the engine through Runtime without ever naming raylib. M1 adds the window.
 
 ## Prerequisites
 
