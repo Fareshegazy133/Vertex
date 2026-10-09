@@ -71,7 +71,8 @@ A review can't claim the code compiles without compiling it. With `--build`:
    `& "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe" Intermediate\ProjectFiles\<Module>.vcxproj -m -nologo -v:minimal -p:Configuration=<Config> -p:Platform=x64`
    Debug and Shipping sit on opposite sides of `VERTEX_ENABLE_ASSERTS`, so together they catch code that only breaks in one of them.
 3. Every compiler error is an ERROR finding at its `file:line`. Quote the first error, not the last; later errors are often fallout.
-4. If a project fails for a reason unrelated to the change (for example, a module with no `.cpp` yet produces no `.lib`), say so. Don't count it as a finding.
+4. If the change touches Core or its tests, also build `CoreTests` in both configurations and run `Binaries\Win64-<Config>\VertexCoreTests.exe`. Every failed test is an ERROR at the `file(line)` doctest prints.
+5. If a project fails for a reason unrelated to the change (for example, a module with no `.cpp` yet produces no `.lib`), say so. Don't count it as a finding.
 
 Without `--build`, the report header says "Not built", and the review names the configurations the change is at risk in.
 
@@ -85,7 +86,7 @@ Check every changed line, and every line of new files. Report only what you can 
 
 ### 1. Module boundaries (CLAUDE.md § Module graph)
 - Core contains no platform, windowing, rendering, or generated code.
-- Runtime depends on raylib **privately**. Editor depends on Runtime only. HeaderTool depends on Core only. Runtime never depends on Editor.
+- Runtime depends on raylib **privately**. Editor depends on Runtime only. HeaderTool depends on Core only. CoreTests depends on Core and doctest only. Runtime never depends on Editor, and no module that ships depends on doctest.
 - A change to `PublicDependencies` or `PrivateDependencies` matches the graph. A public dependency hands its headers to every consumer, so making one public needs a reason.
 - An include of another module's header is backed by a declared dependency, not by a transitive accident.
 
@@ -167,7 +168,14 @@ CLAUDE.md holds the tag tables. Check against them; don't restate them here.
 - Every comment finding is `Owner: Claude`. Fix them before the next pass; they block "Review passed" like any other ERROR.
 - **Doc staleness (ERROR).** If the change adds or renames a module, command, define, folder, or convention, CLAUDE.md and `README.md` say so in the same change. A new module updates the module graph and the README table.
 
-### 12. Git hygiene (CLAUDE.md § Git workflow)
+### 12. Tests (CLAUDE.md § Tests)
+- **Coverage (WARNING).** A change to Core's behavior ships with tests that prove it. Name the behavior left unproven.
+- **Placement (ERROR).** Tests live in `Source/Tests/<Module>Tests/`, never in the module they test. A test file mirrors the header it tests and is named `<File>Tests.cpp`.
+- **Names (WARNING).** Test cases read `"<Subject>: <expected behavior>"`.
+- **`REQUIRE` (WARNING).** Used only where the rest of the test can't run after a failure. Elsewhere, `CHECK`.
+- **Configurations (WARNING).** A test whose result depends on `VERTEX_ENABLE_ASSERTS` or the configuration still passes in Shipping.
+
+### 13. Git hygiene (CLAUDE.md § Git workflow)
 - The branch name fits the scheme (`feature/<milestone>-<topic>`, `fix/`, `chore/`, `docs/`), and the work isn't on `master`.
 - The change is one piece of work. Suggest splitting unrelated work, such as tooling on a feature branch, into its own branch.
 - Nothing generated is staged: `Binaries/`, `Intermediate/`, `Vertex.sln`, `*.vcxproj`, `ThirdParty/*/Source/`.
