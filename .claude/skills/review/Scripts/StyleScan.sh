@@ -378,9 +378,9 @@ for File in "${Files[@]}"; do
 					Name = Trimmed
 					sub(/^#[ \t]*define[ \t]+/, "", Name)
 					sub(/[^A-Za-z0-9_].*$/, "", Name)
-					if (Name !~ /^V[A-Z0-9_]*$/ || Name ~ /_API$/)
+					if (Name !~ /^VX_[A-Z0-9_]+$/ || Name ~ /_API$/)
 					{
-						Hit("Naming: macro must be V-prefixed UPPER_SNAKE; <MODULE>_API comes from the build", N, Raw)
+						Hit("Naming: macro must be VX_-prefixed UPPER_SNAKE; <MODULE>_API comes from the build", N, Raw)
 					}
 				}
 				if (Trimmed ~ /^#[ \t]*ifn?def[ \t]+VERTEX_ENABLE_ASSERTS/ || Code ~ /defined[ \t]*\(?[ \t]*VERTEX_ENABLE_ASSERTS/)

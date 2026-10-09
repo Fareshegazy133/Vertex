@@ -108,7 +108,7 @@ Each module's unit tests build into their own console application at `Source/Tes
 - **Files mirror the header they test**, under `Private/`, named `<File>Tests.cpp`: `Core/Containers/Array.h` is tested by `Private/Containers/ArrayTests.cpp`. A test of something with no header, such as the build configuration, sits at the root of `Private/`.
 - **Test case names read `"<Subject>: <expected behavior>"`**: `TEST_CASE("TArray: Add keeps existing elements when it grows")`. The subject lets `-tc="TArray:*"` run one type's tests.
 - **`CHECK` by default; `REQUIRE` only when the rest of the test can't run after a failure**, such as before dereferencing a pointer the test just checked. A failed `CHECK` is recorded and the test carries on, so one run reports every broken expectation.
-- doctest's macros (`TEST_CASE`, `CHECK`, `REQUIRE`) keep their upstream names. The `V` prefix rule covers Vertex's own macros, and doctest's only exist inside test applications.
+- doctest's macros (`TEST_CASE`, `CHECK`, `REQUIRE`) keep their upstream names. The `VX_` prefix rule covers Vertex's own macros, and doctest's only exist inside test applications.
 - A test file is a `.cpp`, so it carries no comments besides the copyright line. The test case name says what it proves.
 - Tests build and pass in all three configurations. Shipping matters most: it's the code that ships, and the only configuration with asserts compiled out.
 
@@ -132,13 +132,15 @@ Each module's unit tests build into their own console application at `Source/Tes
 | Free functions | Inside `namespace Vertex`; internals that a header must expose go inside `Vertex::Private`; helpers used by one `.cpp` only go in an anonymous namespace | `Vertex::InitializeEngine()` |
 | Getters | `Get…` always succeeds: it returns a value or a reference, and asserts if it can't. `Find…` may come back empty: `nullptr`, an empty `std::optional`, or a not-found index. A `bool` getter asks a question and never starts with `Get` or `Find`. No `TryGet…`: a lookup that can fail is a `Find`. | `GetMode()`, `FindChild(Name)`, `IsVisible()` |
 | Constants | `constexpr`, PascalCase, never `#define` | `MaxLogLineLength` |
-| Macros | `V` prefix, UPPER_SNAKE. `VERTEX_*` and `<MODULE>_API` come from the build. | `VCLASS`, `V_DECLARE_CLASS` |
+| Global variables (agreed in M1, 2026-10-08) | File-local only: in a `.cpp`'s anonymous namespace, PascalCase, no prefix. `constinit` when the initializer is a constant. Other files reach one through functions, never `extern`. | `AssertHandler`, changed through `SetAssertHandler()` |
+| Macros | `VX_` prefix, UPPER_SNAKE. `VERTEX_*` and `<MODULE>_API` come from the build. | `VX_ASSERT`, `VX_CLASS` |
 | Files | Named after the main type, without its prefix | `TArray` → `Array.h` |
 | Backend `.cpp` files | The backend's name, then the name of the header they implement | `Platform/Raylib/RaylibPlatformInit.cpp` implements `Platform/PlatformInit.h` |
 
 Why:
 - Types live at global scope, so their prefix is what keeps them from colliding with raylib's and Windows' unprefixed global names (`CloseWindow`, `DrawText`, …). Free functions have no prefix, so they live in `namespace Vertex`.
 - Macros are expanded by the preprocessor before namespaces exist, so a prefix is their only protection.
+- A global that any file can change is hard to trace when it goes wrong. Behind a function, there's one door, which is the place to add validation or thread safety later. UE marks its globals with `G` (`GLog`) because they're `extern` and visible everywhere; Vertex's never leave their file, so they need no marker. `constinit` guarantees the variable is set before any code runs, so it's safe even from other files' startup code.
 - A method parameter with the same name as a member hides it ("shadowing"), which is warning C4458. At `/W4` with warnings as errors, that fails the build. Hence the `In` rule.
 - The `Find`/`Get` split tells a caller from the name alone whether the result needs a null check. UE's containers follow it: `TLruCache::Find` returns `nullptr` for a missing key, while `FindChecked` asserts.
 - A backend `.cpp` repeats its folder's name so that basenames stay unique. MSBuild compiles every file in a project into one object folder, so a `Raylib/PlatformInit.cpp` and a `Null/PlatformInit.cpp` would both produce `PlatformInit.obj`. UE does the same with `Windows/WindowsPlatformMisc.cpp`.
@@ -434,7 +436,7 @@ Why:
 
 ### Decided when first needed
 
-Concepts, interfaces, global variables, type aliases, and the order of member variables within an access section. Type aliases come up first, in M2's core types: a size alias named `TSize` would read like a class template under these rules.
+Concepts, interfaces, type aliases, and the order of member variables within an access section. Type aliases come up first, in M1's core types: a size alias named `TSize` would read like a class template under these rules.
 
 ## Feature workflow
 

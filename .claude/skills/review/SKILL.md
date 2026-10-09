@@ -242,7 +242,7 @@ The defects that hurt most live in the configuration nobody builds locally.
 
 # Convention governance
 
-CLAUDE.md § "Decided when first needed" lists conventions that aren't settled yet: concepts, interfaces, global variables, and type aliases. When the change introduces one of these, or anything the naming table doesn't cover, or the code is inconsistent where the contract is silent (for example, `const` on by-value parameters in one function but not the next):
+CLAUDE.md § "Decided when first needed" lists conventions that aren't settled yet: concepts, interfaces, and type aliases. When the change introduces one of these, or anything the naming table doesn't cover, or the code is inconsistent where the contract is silent (for example, `const` on by-value parameters in one function but not the next):
 
 - Don't accept it silently, and don't invent a rule.
 - Propose two or three options, recommend one with the reason, and ask Fares to choose.
