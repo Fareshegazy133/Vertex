@@ -90,7 +90,9 @@ Source/<Module>/
 
 Core's public headers live under `Public/Core/…`, so includes read `#include "Core/Containers/Array.h"`. The `Core/` prefix tells every consumer which module a header comes from, and keeps Core's generic folder names (`Containers`, `Math`, `Logging`) from colliding with anyone else's.
 
-`Private/` mirrors `Public/` **without** the module folder: `Private/Logging/Log.cpp`, and private headers are included as `"Logging/Foo.h"`. Only the module itself sees `Private/`, so there is nothing to disambiguate, and a private include never looks like a public one.
+Runtime's public headers sit directly under `Public/`, one folder per layer: `#include "Engine/Engine.h"`. Each layer folder is a module-in-waiting (see Runtime layering), so its name already says where a header comes from, and the include survives the folder's promotion to a module unchanged.
+
+`Private/` mirrors `Public/` **without** the module folder: `Private/Logging/Log.cpp`, and private headers are included as `"Logging/Foo.h"`. Only the module itself sees `Private/`. In Core, a private include never looks like a public one. In Runtime it can, because neither side has a module folder: `"Platform/PlatformInit.h"` is private and `"Engine/Engine.h"` is public. So a Runtime private header never shares its path with a public one. Both folders are on Runtime's include path, the first match wins, and the other header is skipped without a warning.
 
 ## Code style
 
@@ -109,17 +111,19 @@ Core's public headers live under `Public/Core/…`, so includes read `#include "
 | Bools (members and locals) | `b` prefix | `bIsRunning` |
 | Bool parameters | No `b` | `SetVSync(bool VSync)` |
 | Parameters | `In` only when the name would match a member; `Out` always on output parameters | `SetDesc(const VWindowDesc& InDesc)`, `bool& OutSucceeded` |
-| Free functions | Inside `namespace Vertex`; internals that a header must expose go inside `Vertex::Private`; helpers used by one `.cpp` only go in an anonymous namespace | `Vertex::InitializeRuntime()` |
+| Free functions | Inside `namespace Vertex`; internals that a header must expose go inside `Vertex::Private`; helpers used by one `.cpp` only go in an anonymous namespace | `Vertex::InitializeEngine()` |
 | Getters | `Get…` always succeeds: it returns a value or a reference, and asserts if it can't. `Find…` may come back empty: `nullptr`, an empty `std::optional`, or a not-found index. A `bool` getter asks a question and never starts with `Get` or `Find`. No `TryGet…`: a lookup that can fail is a `Find`. | `GetMode()`, `FindChild(Name)`, `IsVisible()` |
 | Constants | `constexpr`, PascalCase, never `#define` | `MaxLogLineLength` |
 | Macros | `V` prefix, UPPER_SNAKE. `VERTEX_*` and `<MODULE>_API` come from the build. | `VCLASS`, `V_DECLARE_CLASS` |
 | Files | Named after the main type, without its prefix | `TArray` → `Array.h` |
+| Backend `.cpp` files | The backend's name, then the name of the header they implement | `Platform/Raylib/RaylibPlatformInit.cpp` implements `Platform/PlatformInit.h` |
 
 Why:
 - Types live at global scope, so their prefix is what keeps them from colliding with raylib's and Windows' unprefixed global names (`CloseWindow`, `DrawText`, …). Free functions have no prefix, so they live in `namespace Vertex`.
 - Macros are expanded by the preprocessor before namespaces exist, so a prefix is their only protection.
 - A method parameter with the same name as a member hides it ("shadowing"), which is warning C4458. At `/W4` with warnings as errors, that fails the build. Hence the `In` rule.
 - The `Find`/`Get` split tells a caller from the name alone whether the result needs a null check. UE's containers follow it: `TLruCache::Find` returns `nullptr` for a missing key, while `FindChecked` asserts.
+- A backend `.cpp` repeats its folder's name so that basenames stay unique. MSBuild compiles every file in a project into one object folder, so a `Raylib/PlatformInit.cpp` and a `Null/PlatformInit.cpp` would both produce `PlatformInit.obj`. UE does the same with `Windows/WindowsPlatformMisc.cpp`.
 
 ### File layout
 
