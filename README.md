@@ -34,7 +34,7 @@ doctest (ThirdParty) ←private── CoreTests ──private──→ Core
 
 | Module | Kind | Purpose |
 |---|---|---|
-| `Core` | Static library | Types, containers, memory, strings, math, logging. No platform or rendering code. |
+| `Core` | Static library | Types, containers, memory, strings, math, logging, asserts. No platform or rendering code. |
 | `Runtime` | Static library | Platform, input, rendering, scene. The only module that knows raylib exists. |
 | `Editor` | Application | The editor executable. |
 | `HeaderTool` | Application | Build-time code generator for reflection. Depends on Core only. |

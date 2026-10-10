@@ -1,6 +1,6 @@
 # M1 feature 1: asserts and Logging v2
 
-**Status:** approved by Fares 2026-10-08. Implementing, card by card.
+**Status:** done 2026-10-10. Cards 1–7 implemented, review passed, merged into `master`.
 
 Branch: `feature/m1-asserts`.
 
@@ -127,9 +127,17 @@ Before writing this plan, Claude tested every risky part in a scratch folder wit
 3. **PR:** when you say so. Merged after you've read the diff.
 4. **Next feature:** Memory and `TUniquePtr`.
 
+## Added during review (2026-10-10, Fares asked Claude to write these)
+
+- **A guard against a failure inside the failure path.** A `constinit thread_local` flag in `Assert.cpp`, set by a small RAII scope, so it's reset even when a handler throws. While a thread is reporting one failure, a second fatal one ends the program at once, and a failing check is skipped. UE: `GIsCriticalError` (`AssertionMacros.cpp:422`).
+- **`SetAssertHandler` returns the handler it replaced**, like `std::set_terminate`. It's written with a trailing return type, `auto … -> void (*)(const VAssertFailure&)`, because type-alias naming is still undecided.
+- **Five more tests (15 in total):** `VX_VERIFY` with a message; two throwing failures in a row; a failure inside the handler; `SetAssertHandler(nullptr)`; and getting the replaced handler back. A deliberate break of the guard made the nested-failure test fail.
+- **Build time measured:** `<format>` costs about 0.3 seconds per file that includes `Log.h` or `Assert.h` (about 660 ms against 355 ms for `<cstdint>` and `<string_view>` alone). It's fine at today's dozen files. The per-module precompiled header on the roadmap is the fix once Core's headers spread.
+- **Two conventions recorded in CLAUDE.md:** the include order (§ File layout), and where shared test helpers go (§ Tests).
+
 ## Later (not in this feature)
 
-- **Stop in the debugger at the exact failing line**, before ending the program. That needs an OS call ("is a debugger attached?"), and Core has no OS code yet. Revisit with M2's platform layer, or sooner if card 7 shows the debugger stopping somewhere unhelpful.
+- **Stop in the debugger at the exact failing line.** Not needed for now: card 7 showed that Rider's debugger already stops on the failing `VX_ASSERT` line (2026-10-10). Revisit only if another debugger or a crash dump lands somewhere unhelpful.
 - **A call stack in the Error line.** Revisit when an assert is hard to trace from file and line alone.
 - **`VX_CHECK_ALWAYS`**, which reports every failure, not just the first. Added when first needed.
 - **raylib's log through `Vertex::Log`:** M2, with the first window.

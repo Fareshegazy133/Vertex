@@ -368,6 +368,27 @@ for File in "${Files[@]}"; do
 					{
 						Hit("Includes: write includes from the module include root (no ../, Public/, Private/, Source/)", N, Raw)
 					}
+					# Include order: a .cpp starts with its own header (checked above, and exempt here), then quoted includes, then <standard> ones,
+					# each run sorted alphabetically, ignoring case.
+					IncludePath = Trimmed
+					sub(/^#[ \t]*include[ \t]*[<"]/, "", IncludePath)
+					sub(/[>"].*$/, "", IncludePath)
+					IncludeGroup = (Trimmed ~ /^#[ \t]*include[ \t]*"/) ? 1 : 2
+					IsOwnInclude = (IsCpp && IncludeCount == 0)
+					IncludeCount++
+					if (!IsOwnInclude)
+					{
+						if (PrevIncludeGroup != "" && IncludeGroup < PrevIncludeGroup)
+						{
+							Hit("Includes: quoted includes come before <standard> ones", N, Raw)
+						}
+						else if (PrevIncludeGroup != "" && IncludeGroup == PrevIncludeGroup && tolower(IncludePath) < tolower(PrevIncludePath))
+						{
+							Hit("Includes: sort each run of includes alphabetically", N, Raw)
+						}
+						PrevIncludeGroup = IncludeGroup
+						PrevIncludePath = IncludePath
+					}
 				}
 				if (IsHeader && Trimmed ~ /^#[ \t]*ifndef[ \t]+[A-Z0-9_]+_H(PP)?_?$/)
 				{

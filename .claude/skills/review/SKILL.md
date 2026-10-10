@@ -113,7 +113,7 @@ Check every row of the table. The scan covers type, enum, template-parameter, ma
 ### 5. File layout (CLAUDE.md § File layout, § Declaration order, § Source layout per module)
 - The copyright line comes first in every `.h`, `.cpp`, and `.inl`. Headers follow it with `#pragma once`.
 - **Class layout (CLAUDE.md § Declaration order).** The scan can't see this yet, so read every changed class, struct, and union, and check each rule:
-  - Types, then functions, then variables. Each group runs `public` → `protected` → `private`. Flag a data member inside the functions block, and a function declared below the first variable. Two adjacent sections with the same access specifier are correct.
+  - Types, then functions, then variables. Each group runs `public` → `protected` → `private`. Flag a data member inside the functions block, and a function declared below the first variable. Two adjacent sections with the same access specifier are correct. A struct whose members are all public writes no specifiers at all; one non-public member brings the full rule back.
   - Types group: macros first, above the first access specifier, then aliases and nested types, each declared before anything that uses it.
   - Functions, in each access section, follow the 13 rows of the table. Classify each function: constructors, the destructor, and operators go to their own rows by syntax. Every other function goes to the first of rows 4–12 it fits. Then confirm the rows never go backwards. Quote the out-of-place function and the row it belongs in.
   - Row 2: your own parameter lists, then copy, then move. Row 4: new virtuals, then overrides grouped by base class in declaration order.
@@ -123,6 +123,7 @@ Check every row of the table. The scan covers type, enum, template-parameter, ma
   - Variable order within an access section is undecided (§ Decided when first needed). Don't flag it. If a pattern shows up, raise it under **Convention governance**.
 - A `.cpp` or `.inl` defines its functions in the header's declaration order, with anonymous-namespace helpers above them. Compare the two files side by side.
 - Includes are written from the module's include root. Core's public headers live under `Public/Core/…`. `Private/` mirrors `Public/` without the module folder.
+- Includes follow the three-run order in CLAUDE.md § File layout. The scan checks it. Include order is Owner: Claude: Fares includes in any order, and Claude fixes it silently, without reporting it.
 - A `.cpp` includes its own header first.
 - By-value parameters are `const` in both the declaration and the definition (CLAUDE.md § Code style). The scan can't see this, so compare each changed signature in the `.h` and the `.cpp`.
 - Every header is self-sufficient: it includes what it uses (for example, `<string_view>` for `std::string_view`).
@@ -213,6 +214,9 @@ Engine code runs every frame, so treat it as a budget.
 
 ### Errors & asserts
 - Asserts are for programmer errors (broken invariants). Things that can happen on a player's machine (a missing file, a lost device) get a runtime check and a log line. Asserts vanish in Shipping.
+- **Side effects in `VX_ASSERT` (ERROR).** An expression that does work that must happen (a call that changes state, `++`, an assignment) belongs in `VX_VERIFY`, because `VX_ASSERT`'s expression never runs in Shipping (CLAUDE.md § Asserts). Tests that do it on purpose, to prove exactly that, are the exception.
+- The right macro for the job: `VX_CHECK` only where the code handles the `false` case and carries on; `VX_ASSERT` where carrying on would be undefined behavior.
+- Nothing on the assert failure path (`Core/Debug/Assert.*`) is `noexcept`.
 - A result a caller must not ignore is `[[nodiscard]]`.
 
 ### Build configurations (Debug / Development / Shipping)

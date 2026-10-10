@@ -81,7 +81,7 @@ A folder never includes a folder above it. Promote a folder to its own module **
 | Define | Meaning |
 |---|---|
 | `VERTEX_DEBUG` / `VERTEX_DEVELOPMENT` / `VERTEX_SHIPPING` | Exactly one is defined, per configuration |
-| `VERTEX_ENABLE_ASSERTS` | `1` in Debug and Development, `0` in Shipping |
+| `VERTEX_ENABLE_ASSERTS` | `1` in Debug and Development, `0` in Shipping. `VX_ASSERT`, `VX_VERIFY`, and `VX_CHECK` read it (see Asserts). |
 | `CORE_API`, `RUNTIME_API` | Export markers for a module's public classes and functions. Defined **empty** while modules are static libraries; they become `__declspec(dllexport/dllimport)` if a module ever becomes a DLL. Use them on public API from day one. |
 
 ## Source layout per module
@@ -106,16 +106,36 @@ Each module's unit tests build into their own console application at `Source/Tes
 - **Tests live in the test application, never in the module.** A linker only pulls an `.obj` out of a static library when something references it. Nothing references a self-registering test, so it would vanish without an error. UE keeps its low-level tests in separate programs too (`Programs/LowLevelTests/`).
 - **A test application depends privately on the module it tests and on doctest, nothing more.** CoreTests can't include a Runtime header, so a Core test can't lean on the platform.
 - **Files mirror the header they test**, under `Private/`, named `<File>Tests.cpp`: `Core/Containers/Array.h` is tested by `Private/Containers/ArrayTests.cpp`. A test of something with no header, such as the build configuration, sits at the root of `Private/`.
+- **A helper that tests share** (a handler, a fixture) sits in the folder of the header it supports and is named for what it does: `Private/Debug/AssertRecorder.h` (agreed in M1, 2026-10-10). It's a header like any other, comments included.
 - **Test case names read `"<Subject>: <expected behavior>"`**: `TEST_CASE("TArray: Add keeps existing elements when it grows")`. The subject lets `-tc="TArray:*"` run one type's tests.
 - **`CHECK` by default; `REQUIRE` only when the rest of the test can't run after a failure**, such as before dereferencing a pointer the test just checked. A failed `CHECK` is recorded and the test carries on, so one run reports every broken expectation.
 - doctest's macros (`TEST_CASE`, `CHECK`, `REQUIRE`) keep their upstream names. The `VX_` prefix rule covers Vertex's own macros, and doctest's only exist inside test applications.
 - A test file is a `.cpp`, so it carries no comments besides the copyright line. The test case name says what it proves.
 - Tests build and pass in all three configurations. Shipping matters most: it's the code that ships, and the only configuration with asserts compiled out.
 
+## Asserts
+
+`Core/Debug/Assert.h` has three macros. Each takes an expression and, optionally, a message: `VX_ASSERT(Index < Num, "Index {} is out of range", Index)`.
+
+| Macro | Use it for | When false (Debug, Development) | In Shipping |
+|---|---|---|---|
+| `VX_ASSERT` | A broken invariant: it can only be false if the code has a bug | Logs one Error line, then ends the program | Removed. The expression never runs. |
+| `VX_VERIFY` | The same, when the expression does work that must still happen | Same as `VX_ASSERT` | The expression runs; its result is ignored |
+| `VX_CHECK` | A bug the program can survive: `if (VX_CHECK(Texture != nullptr)) { … }` | Logs once per call site, then gives `false` | The expression runs and gives its result |
+
+- **Never put work that must happen inside `VX_ASSERT`.** `VX_ASSERT(Stack.Pop() == 5)` pops in Debug and doesn't in Shipping. Use `VX_VERIFY`.
+- **Asserts are for programmer errors.** Things that can happen on a player's machine (a missing file, a lost device) get a runtime check and a log line, because asserts vanish in Shipping.
+- **The message is a `std::format` string**, checked at compile time in every configuration, Shipping included. It's only formatted after a failure, into a stack buffer, and cut at 1024 characters.
+- **An expression with a comma outside parentheses needs its own parentheses**: `VX_ASSERT((IsValid(TPair<int, int>{1, 2})))`. A bare comma splits macro arguments.
+- **`VX_CHECK` reports once per call site** for the whole run; inside a template, once per instantiation.
+- **Every failure goes through one handler**, which `Vertex::SetAssertHandler` replaces. It returns the handler it replaced, so a caller can put it back. The default writes the Error line through `Log`. CoreTests installs one that throws, so a test can catch a failure. After `VX_ASSERT` and `VX_VERIFY`, the program ends even when a custom handler returns.
+- **A failure inside the failure path isn't reported again.** While a thread is reporting one failure, a second fatal one ends the program at once, and a failing check is skipped. Without that, an assert inside `Log` or a handler would recurse until the stack ran out. UE does the same with `GIsCriticalError` (`Core/Private/Misc/AssertionMacros.cpp:422`).
+- **Nothing on the failure path is `noexcept`.** A test handler throws through it, and `noexcept` would turn that into `std::terminate`.
+
 ## Code style
 
 - Allman braces (the opening brace on its own line) everywhere, including Lua tables. Indent with tabs (enforced by `.editorconfig`). Files are UTF-8 without BOM.
-- By-value parameters are `const` in the declaration and the definition alike, so the two signatures stay identical: `void Log(const ELogLevel LogLevel, const std::string_view Message);`. The compiler ignores that `const` in a declaration. In the definition, it stops the body from reassigning a parameter by accident.
+- By-value parameters are `const` in the declaration and the definition alike, so the two signatures stay identical: `void WriteLog(const ELogLevel LogLevel, const std::string_view Format, const std::format_args Arguments);`. The compiler ignores that `const` in a declaration. In the definition, it stops the body from reassigning a parameter by accident.
 
 ### C++ naming (agreed in M0 step 7)
 
@@ -134,6 +154,7 @@ Each module's unit tests build into their own console application at `Source/Tes
 | Constants | `constexpr`, PascalCase, never `#define` | `MaxLogLineLength` |
 | Global variables (agreed in M1, 2026-10-08) | File-local only: in a `.cpp`'s anonymous namespace, PascalCase, no prefix. `constinit` when the initializer is a constant. Other files reach one through functions, never `extern`. | `AssertHandler`, changed through `SetAssertHandler()` |
 | Macros | `VX_` prefix, UPPER_SNAKE. `VERTEX_*` and `<MODULE>_API` come from the build. | `VX_ASSERT`, `VX_CLASS` |
+| Names the language or the standard library requires (agreed in M1, 2026-10-10) | Keep the required spelling. Everything else follows the rows above. | `value_type`, `push_back()`, `begin()`/`end()` |
 | Files | Named after the main type, without its prefix | `TArray` → `Array.h` |
 | Backend `.cpp` files | The backend's name, then the name of the header they implement | `Platform/Raylib/RaylibPlatformInit.cpp` implements `Platform/PlatformInit.h` |
 
@@ -141,6 +162,7 @@ Why:
 - Types live at global scope, so their prefix is what keeps them from colliding with raylib's and Windows' unprefixed global names (`CloseWindow`, `DrawText`, …). Free functions have no prefix, so they live in `namespace Vertex`.
 - Macros are expanded by the preprocessor before namespaces exist, so a prefix is their only protection.
 - A global that any file can change is hard to trace when it goes wrong. Behind a function, there's one door, which is the place to add validation or thread safety later. UE marks its globals with `G` (`GLog`) because they're `extern` and visible everywhere; Vertex's never leave their file, so they need no marker. `constinit` guarantees the variable is set before any code runs, so it's safe even from other files' startup code.
+- The standard library and the language look some names up by their exact spelling: `std::back_inserter` calls `push_back` and reads `value_type`, and a range-for loop calls `begin()` and `end()`. Renaming them to PascalCase breaks the code that uses them. UE's `TArray` keeps lowercase `begin()`/`end()` for the same reason.
 - A method parameter with the same name as a member hides it ("shadowing"), which is warning C4458. At `/W4` with warnings as errors, that fails the build. Hence the `In` rule.
 - The `Find`/`Get` split tells a caller from the name alone whether the result needs a null check. UE's containers follow it: `TLruCache::Find` returns `nullptr` for a missing key, while `FindChecked` asserts.
 - A backend `.cpp` repeats its folder's name so that basenames stay unique. MSBuild compiles every file in a project into one object folder, so a `Raylib/PlatformInit.cpp` and a `Null/PlatformInit.cpp` would both produce `PlatformInit.obj`. UE does the same with `Windows/WindowsPlatformMisc.cpp`.
@@ -159,9 +181,18 @@ Every `.h`, `.cpp`, and `.inl` starts with the copyright line. Headers follow it
 
 A `.cpp` includes its own header first. If that header is missing an include it needs, it fails right there instead of somewhere unrelated, which keeps every header self-sufficient.
 
+Includes come in three runs, with no blank lines between them (agreed in M1, 2026-10-10):
+1. a `.cpp`'s own header;
+2. every other quoted include, Vertex's and third-party's, alphabetically;
+3. standard headers in angle brackets, alphabetically.
+
+Alphabetical ignores case. A fixed order makes a duplicate easy to spot, and two branches that each add an include don't argue over where it goes. StyleScan checks it.
+
 ### Declaration order (agreed in M0 step 7, extended 2026-10-04)
 
 Inside a class, struct, or union, declarations come in three groups, in this order: **types, then functions, then variables**, never interleaved. Each group runs its own `public` → `protected` → `private` sequence, so a group re-states an access specifier even when the previous group ended on the same one. Two adjacent `private:` sections are correct, not redundant. Static data members and callbacks (a `std::function` member, for example) count as variables.
+
+A struct whose members are **all** public writes no access specifiers; it still keeps the three groups in order (agreed in M1, 2026-10-10). As soon as one member is protected or private, the full rule applies. A struct's members are public by default, so the specifiers would only repeat it.
 
 Types come first because C++ only lets a function signature use a type declared above it. A nested type placed among the variables fails to compile (C3646) as soon as a function takes or returns it.
 
@@ -347,14 +378,19 @@ An override gets only a one-line comment saying what differs from the base versi
 
 ```cpp
 /**
- * Writes one line, formatted as "[Level] Message", and adds the newline.
+ * Formats one line, writes it as "[Level] Message", and adds the newline.
  *
+ * @tparam TArguments The types of the values to format. Deduced from Arguments; never spelled out.
  * @param LogLevel Severity. Info goes to stdout; Warning and Error go to stderr.
- * @param Message The text to write. Read only during the call; it needs no null terminator.
+ * @param Format A std::format string, such as "Loaded {} files". The compiler checks it against Arguments, so a mismatch fails the build.
+ * @param Arguments The values for Format's {} fields. Read only during the call.
+ * @warning Format must be visible to the compiler. To log a run-time string, pass it as an argument: Log(LogLevel, "{}", Text).
  * @note Safe to call from any thread: each line is written whole, then flushed.
  * @note Every call flushes, which costs a write to the OS. Keep logging out of per-frame code.
+ * @note Formats into a 1024-character stack buffer, not the heap. Longer lines are cut.
  */
-CORE_API void Log(const ELogLevel LogLevel, const std::string_view Message);
+template<typename... TArguments>
+void Log(const ELogLevel LogLevel, const std::format_string<TArguments...> Format, TArguments&&... Arguments)
 ```
 
 #### Classes, structs, and unions
@@ -415,7 +451,7 @@ The file comment sits between the copyright line and `#pragma once`. It says wha
 ```cpp
 // Copyright HNDRED GAMES. All Rights Reserved.
 
-/** Core logging: the severity levels and the function that writes one line to the console. */
+/** Core logging: the severity levels, and Log, which formats one line and writes it to the console. */
 
 #pragma once
 ```
