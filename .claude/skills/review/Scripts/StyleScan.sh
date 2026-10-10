@@ -368,6 +368,27 @@ for File in "${Files[@]}"; do
 					{
 						Hit("Includes: write includes from the module include root (no ../, Public/, Private/, Source/)", N, Raw)
 					}
+					# Include order: a .cpp starts with its own header (checked above, and exempt here), then quoted includes, then <standard> ones,
+					# each run sorted alphabetically, ignoring case.
+					IncludePath = Trimmed
+					sub(/^#[ \t]*include[ \t]*[<"]/, "", IncludePath)
+					sub(/[>"].*$/, "", IncludePath)
+					IncludeGroup = (Trimmed ~ /^#[ \t]*include[ \t]*"/) ? 1 : 2
+					IsOwnInclude = (IsCpp && IncludeCount == 0)
+					IncludeCount++
+					if (!IsOwnInclude)
+					{
+						if (PrevIncludeGroup != "" && IncludeGroup < PrevIncludeGroup)
+						{
+							Hit("Includes: quoted includes come before <standard> ones", N, Raw)
+						}
+						else if (PrevIncludeGroup != "" && IncludeGroup == PrevIncludeGroup && tolower(IncludePath) < tolower(PrevIncludePath))
+						{
+							Hit("Includes: sort each run of includes alphabetically", N, Raw)
+						}
+						PrevIncludeGroup = IncludeGroup
+						PrevIncludePath = IncludePath
+					}
 				}
 				if (IsHeader && Trimmed ~ /^#[ \t]*ifndef[ \t]+[A-Z0-9_]+_H(PP)?_?$/)
 				{
@@ -378,9 +399,9 @@ for File in "${Files[@]}"; do
 					Name = Trimmed
 					sub(/^#[ \t]*define[ \t]+/, "", Name)
 					sub(/[^A-Za-z0-9_].*$/, "", Name)
-					if (Name !~ /^V[A-Z0-9_]*$/ || Name ~ /_API$/)
+					if (Name !~ /^VX_[A-Z0-9_]+$/ || Name ~ /_API$/)
 					{
-						Hit("Naming: macro must be V-prefixed UPPER_SNAKE; <MODULE>_API comes from the build", N, Raw)
+						Hit("Naming: macro must be VX_-prefixed UPPER_SNAKE; <MODULE>_API comes from the build", N, Raw)
 					}
 				}
 				if (Trimmed ~ /^#[ \t]*ifn?def[ \t]+VERTEX_ENABLE_ASSERTS/ || Code ~ /defined[ \t]*\(?[ \t]*VERTEX_ENABLE_ASSERTS/)
