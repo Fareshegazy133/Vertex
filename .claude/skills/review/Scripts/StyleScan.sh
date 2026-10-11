@@ -3,7 +3,8 @@
 #
 # Checks what a model reading a diff can't see reliably (tabs vs spaces, BOMs,
 # trailing whitespace, brace placement) plus the regex-checkable rules from
-# CLAUDE.md "Code style", "The raylib rule", and "Build system".
+# CLAUDE.md "Code style", "The raylib rule", and "Build system", and a heuristic
+# pass over class layout and function order ("Declaration order").
 #
 # Every hit is a CANDIDATE. The reviewer confirms each one against the source
 # before reporting it, and drops false positives.
@@ -147,6 +148,553 @@ for File in "${Files[@]}"; do
 			}
 		}
 
+		# Class layout and function order (CLAUDE.md "Declaration order"). A heuristic: it
+		# follows braces to find class bodies, splits each body into declarations, and sorts
+		# each function into one of the 13 rows. A const function that returns neither bool
+		# nor void, and has no Get, Find, or Set prefix, may be a normal function or an other
+		# getter, so it is left out of the row check. Within the operator row, only the seven
+		# operator steps are checked, not the order inside a step.
+		function TopKind()
+		{
+			return (Depth == 0) ? "file" : ScopeKind[Depth]
+		}
+
+		function AtStatementLevel(    Kind)
+		{
+			Kind = TopKind()
+			return (Kind == "file" || Kind == "ns" || Kind == "class")
+		}
+
+		# Kind is "block", "enum", "ns", or "class:<class|struct>:<Name>".
+		function PushScope(Kind,    Parts)
+		{
+			Depth++
+			ScopeKind[Depth] = Kind
+			if (Kind ~ /^class:/)
+			{
+				split(Kind, Parts, ":")
+				ScopeKind[Depth] = "class"
+				ClassName[Depth] = Parts[3]
+				ClassIsClass[Depth] = (Parts[2] == "class")
+				ClassAccess[Depth] = ClassIsClass[Depth] ? 3 : 1
+				ClassSawSpec[Depth] = 0
+				ClassAnySpec[Depth] = 0
+				LastGroup[Depth] = 0
+				LastAccess[Depth] = 0
+				LastRow[Depth] = 0
+				LastSub[Depth] = 0
+				LastOpCat[Depth] = 0
+			}
+		}
+
+		function PopScope()
+		{
+			if (Depth > 0)
+			{
+				Depth--
+			}
+		}
+
+		# Drops "template <...>" from the front of a line and returns the rest.
+		function StripTemplateHead(Text,    I, Ch, Level)
+		{
+			I = index(Text, "<")
+			if (I == 0)
+			{
+				return ""
+			}
+			Level = 0
+			for (; I <= length(Text); I++)
+			{
+				Ch = substr(Text, I, 1)
+				if (Ch == "<")
+				{
+					Level++
+				}
+				else if (Ch == ">")
+				{
+					Level--
+					if (Level == 0)
+					{
+						break
+					}
+				}
+			}
+			Text = substr(Text, I + 1)
+			sub(/^[ \t]+/, "", Text)
+			return Text
+		}
+
+		# Splits a declaration into SigBefore, SigName, SigParams, and SigAfter. For an
+		# operator, SigOpCat is its step in the operator order: 1 assignment, 2 compound
+		# assignment, 3 binary, 4 comparison, 5 subscript and call, 6 other, 7 conversion.
+		# Returns 0 when the declaration is not a function.
+		function ParseSignature(Text,    Start, Rest, Token, I, Level, Ch)
+		{
+			SigBefore = ""
+			SigName = ""
+			SigParams = ""
+			SigAfter = ""
+			SigOpCat = 0
+			Token = ""
+			if (match(Text, /(^|[^A-Za-z0-9_])operator([^A-Za-z0-9_]|$)/))
+			{
+				Start = RSTART + index(substr(Text, RSTART), "operator") - 1
+				SigBefore = substr(Text, 1, Start - 1)
+				Rest = substr(Text, Start + 8)
+				sub(/^[ \t]+/, "", Rest)
+				if (Rest ~ /^(new|delete)([^A-Za-z0-9_]|$)/)
+				{
+					Token = (Rest ~ /^new/) ? "new" : "delete"
+					SigOpCat = 6
+				}
+				else if (match(Rest, /^[A-Za-z_][^(]*\(/))
+				{
+					Token = substr(Rest, 1, RLENGTH - 1)
+					SigOpCat = 7
+				}
+				else
+				{
+					for (I = 1; I <= OpTokenCount; I++)
+					{
+						if (substr(Rest, 1, length(OpTokens[I])) == OpTokens[I])
+						{
+							Token = OpTokens[I]
+							break
+						}
+					}
+					if (Token == "")
+					{
+						return 0
+					}
+				}
+				Rest = substr(Rest, length(Token) + 1)
+				gsub(/[ \t]/, "", Token)
+				SigName = "operator" Token
+			}
+			else
+			{
+				while (gsub(/<[^<>]*>/, "", Text) > 0)
+				{
+				}
+				Start = index(Text, "(")
+				if (Start == 0)
+				{
+					return 0
+				}
+				SigBefore = substr(Text, 1, Start - 1)
+				if (SigBefore ~ /=/ || !match(SigBefore, /~?[A-Za-z_][A-Za-z0-9_]*[ \t]*$/))
+				{
+					return 0
+				}
+				SigName = substr(SigBefore, RSTART, RLENGTH)
+				sub(/[ \t]+$/, "", SigName)
+				SigBefore = substr(SigBefore, 1, RSTART - 1)
+				if (SigName ~ /^(void|bool|char|auto|const|decltype|alignas|noexcept|requires|return|sizeof)$/)
+				{
+					return 0
+				}
+				Rest = substr(Text, Start)
+			}
+			Start = index(Rest, "(")
+			if (Start == 0)
+			{
+				return 0
+			}
+			Level = 0
+			for (I = Start; I <= length(Rest); I++)
+			{
+				Ch = substr(Rest, I, 1)
+				if (Ch == "(")
+				{
+					Level++
+				}
+				else if (Ch == ")")
+				{
+					Level--
+					if (Level == 0)
+					{
+						break
+					}
+				}
+			}
+			SigParams = substr(Rest, Start + 1, I - Start - 1)
+			SigAfter = substr(Rest, I + 1)
+			if (Token != "" && SigOpCat == 0)
+			{
+				if (Token == "=")
+				{
+					SigOpCat = 1
+				}
+				else if (Token ~ /^(\+=|-=|\*=|\/=|%=|&=|\|=|\^=|<<=|>>=)$/)
+				{
+					SigOpCat = 2
+				}
+				else if (Token ~ /^(\+|-|\*|\/|%|&|\||\^|<<|>>)$/)
+				{
+					SigOpCat = (SigParams ~ /^[ \t]*(void)?[ \t]*$/) ? 6 : 3
+				}
+				else if (Token ~ /^(==|<=>|!=|<|>|<=|>=)$/)
+				{
+					SigOpCat = 4
+				}
+				else if (Token == "[]" || Token == "()")
+				{
+					SigOpCat = 5
+				}
+				else
+				{
+					SigOpCat = 6
+				}
+			}
+			return 1
+		}
+
+		# Identifies a function across its declaration and an out-of-line definition: the
+		# name, the parameters without spaces or default arguments, and a trailing const.
+		function MakeKey(    Params, Qualifier)
+		{
+			Params = SigParams
+			while (gsub(/<[^<>]*>/, "", Params) > 0)
+			{
+			}
+			gsub(/=[^,]*/, "", Params)
+			gsub(/[ \t]/, "", Params)
+			Qualifier = (SigAfter ~ /^[ \t]*const([^A-Za-z0-9_]|$)/) ? "const" : ""
+			return SigName "(" Params ")" Qualifier
+		}
+
+		function CheckMember(Text,    Group, Access, Row, Sub, IsConst, Params, Owner, Count)
+		{
+			if (Text ~ /^(friend|static_assert)([^A-Za-z0-9_]|$)/)
+			{
+				return
+			}
+			gsub(/\[\[[^]]*\]\]/, "", Text)
+			sub(/^[ \t]+/, "", Text)
+			Group = 3
+			if (Text ~ /^(using|typedef|enum|class|struct|union)([^A-Za-z0-9_]|$)/ || Text ~ /^[A-Z][A-Z0-9_]*\(/)
+			{
+				Group = 1
+			}
+			else if (ParseSignature(Text))
+			{
+				Group = 2
+			}
+			Access = ClassAccess[Depth]
+			if (Group < LastGroup[Depth])
+			{
+				Hit("Class layout: types, then functions, then variables", StmtLine, StmtRaw)
+			}
+			else if (Group > LastGroup[Depth])
+			{
+				if (LastGroup[Depth] > 0 && !ClassSawSpec[Depth] && (ClassIsClass[Depth] || ClassAnySpec[Depth]))
+				{
+					Hit("Class layout: each group restates its access specifier", StmtLine, StmtRaw)
+				}
+				LastGroup[Depth] = Group
+				LastAccess[Depth] = Access
+				LastRow[Depth] = 0
+				LastSub[Depth] = 0
+				LastOpCat[Depth] = 0
+			}
+			else if (Access < LastAccess[Depth])
+			{
+				Hit("Class layout: each group runs public, then protected, then private", StmtLine, StmtRaw)
+			}
+			else if (Access > LastAccess[Depth])
+			{
+				LastAccess[Depth] = Access
+				LastRow[Depth] = 0
+				LastSub[Depth] = 0
+				LastOpCat[Depth] = 0
+			}
+			ClassSawSpec[Depth] = 0
+			if (Group != 2)
+			{
+				return
+			}
+
+			Owner = ClassName[Depth]
+			Count = ++DeclKeyCount[Owner]
+			DeclKey[Owner, Count] = MakeKey()
+			DeclName[Owner, Count] = SigName
+
+			IsConst = (SigAfter ~ /^[ \t]*const([^A-Za-z0-9_]|$)/)
+			Sub = 0
+			if (SigName == Owner)
+			{
+				Row = (SigParams ~ /^[ \t]*(void)?[ \t]*$/) ? 1 : 2
+				Params = SigParams
+				while (gsub(/<[^<>]*>/, "", Params) > 0)
+				{
+				}
+				if (Params ~ ("^[ \t]*const[ \t]+" Owner "[ \t]*&([^&]|$)"))
+				{
+					Sub = 1
+				}
+				else if (Params ~ ("^[ \t]*" Owner "[ \t]*&&"))
+				{
+					Sub = 2
+				}
+			}
+			else if (SigName == ("~" Owner))
+			{
+				Row = 3
+			}
+			else if (SigName ~ /^operator/)
+			{
+				Row = 13
+			}
+			else if (SigBefore ~ /(^|[^A-Za-z0-9_])virtual([^A-Za-z0-9_]|$)/ || SigAfter ~ /(^|[^A-Za-z0-9_])(override|final)([^A-Za-z0-9_]|$)/)
+			{
+				Row = 4
+			}
+			else if (SigBefore ~ /(^|[^A-Za-z0-9_])static([^A-Za-z0-9_]|$)/)
+			{
+				Row = 5
+			}
+			else if (StmtTemplate)
+			{
+				Row = 6
+			}
+			else if (SigName ~ /^Set[A-Z]/)
+			{
+				Row = 8
+			}
+			else if (SigName ~ /^Find([A-Z]|$)/)
+			{
+				Row = 10
+			}
+			else if (SigName ~ /^Get([A-Z]|$)/)
+			{
+				Row = 11
+			}
+			else if (IsConst && SigBefore ~ /(^|[^A-Za-z0-9_])bool[ \t]*$/)
+			{
+				Row = 12
+			}
+			else if (!IsConst || SigBefore ~ /(^|[^A-Za-z0-9_])void[ \t]*$/)
+			{
+				Row = 7
+			}
+			else
+			{
+				return
+			}
+
+			if (Row < LastRow[Depth])
+			{
+				Hit("Function order: a function sits above a row it belongs below", StmtLine, SigName " (row " Row ") is below " LastRowName[Depth] " (row " LastRow[Depth] ")")
+				return
+			}
+			if (Row > LastRow[Depth])
+			{
+				LastRow[Depth] = Row
+				LastSub[Depth] = 0
+				LastOpCat[Depth] = 0
+			}
+			LastRowName[Depth] = SigName
+			if (Row == 2)
+			{
+				if (Sub < LastSub[Depth])
+				{
+					Hit("Function order: constructors take your own parameters, then copy, then move", StmtLine, StmtRaw)
+				}
+				else
+				{
+					LastSub[Depth] = Sub
+				}
+			}
+			if (Row == 13)
+			{
+				if (SigOpCat < LastOpCat[Depth])
+				{
+					Hit("Function order: operators follow the operator order", StmtLine, SigName " comes after " LastOpName[Depth])
+				}
+				else
+				{
+					LastOpCat[Depth] = SigOpCat
+					LastOpName[Depth] = SigName
+				}
+			}
+		}
+
+		# An out-of-line member definition below its class, such as a class template defines,
+		# follows the order the class declares its functions in.
+		function CheckDefinition(Text,    Probe, Owner, Rest, Key, I, Found)
+		{
+			gsub(/\[\[[^]]*\]\]/, "", Text)
+			while (gsub(/<[^<>]*>/, "", Text) > 0)
+			{
+			}
+			Probe = Text
+			Owner = ""
+			while (match(Probe, /[A-Za-z_][A-Za-z0-9_]*::/))
+			{
+				Rest = substr(Probe, RSTART + RLENGTH)
+				if ((substr(Probe, RSTART, RLENGTH - 2) in DeclKeyCount) && Rest ~ /^(~?[A-Za-z_][A-Za-z0-9_]*[ \t]*\(|operator([^A-Za-z0-9_]|$))/)
+				{
+					Owner = substr(Probe, RSTART, RLENGTH - 2)
+					break
+				}
+				Probe = Rest
+			}
+			if (Owner == "" || !ParseSignature(Rest))
+			{
+				return
+			}
+			Key = MakeKey()
+			Found = 0
+			for (I = 1; I <= DeclKeyCount[Owner]; I++)
+			{
+				if (!((Owner, I) in DeclUsed) && DeclKey[Owner, I] == Key)
+				{
+					Found = I
+					break
+				}
+			}
+			for (I = 1; !Found && I <= DeclKeyCount[Owner]; I++)
+			{
+				if (!((Owner, I) in DeclUsed) && DeclName[Owner, I] == SigName)
+				{
+					Found = I
+				}
+			}
+			if (!Found)
+			{
+				return
+			}
+			DeclUsed[Owner, Found] = 1
+			if (Found < LastDef[Owner])
+			{
+				Hit("Definition order: definitions below the class follow its declaration order", StmtLine, StmtRaw)
+			}
+			else
+			{
+				LastDef[Owner] = Found
+			}
+		}
+
+		function FinishStatement(    Text)
+		{
+			Text = Stmt
+			gsub(/[ \t]+/, " ", Text)
+			sub(/^ /, "", Text)
+			sub(/ $/, "", Text)
+			if (Text != "")
+			{
+				if (TopKind() == "class")
+				{
+					CheckMember(Text)
+				}
+				else
+				{
+					CheckDefinition(Text)
+				}
+			}
+			Stmt = ""
+			StmtTemplate = 0
+		}
+
+		# Feeds one line of comment-free code to the layout checks.
+		function ScanLayout(Text, Trim, LineNo,    Scan, Head, Name, I, Ch)
+		{
+			Scan = Text
+			gsub(/"([^"\\]|\\.)*"/, "\"\"", Scan)
+			gsub("\047[^\047]*\047", "0", Scan)
+			if (AtStatementLevel())
+			{
+				if (TopKind() == "class" && Trim ~ /^(public|protected|private)[ \t]*:$/)
+				{
+					ClassAccess[Depth] = (Trim ~ /^public/) ? 1 : ((Trim ~ /^protected/) ? 2 : 3)
+					ClassSawSpec[Depth] = 1
+					ClassAnySpec[Depth] = 1
+					return
+				}
+				if (TopKind() == "class" && Stmt == "" && Trim ~ /^[A-Z][A-Z0-9_]*\(.*\)$/)
+				{
+					StmtLine = LineNo
+					StmtRaw = Raw
+					Stmt = Trim
+					FinishStatement()
+					return
+				}
+				Head = Trim
+				if (Head ~ /^template[ \t]*</)
+				{
+					StmtTemplate = 1
+					Head = StripTemplateHead(Head)
+					if (Head == "" || Head ~ /^requires([^A-Za-z0-9_]|$)/)
+					{
+						return
+					}
+					Scan = Head
+				}
+				else if (Stmt == "" && Head ~ /^requires([^A-Za-z0-9_]|$)/)
+				{
+					return
+				}
+				if (Head ~ /^(class|struct|union)[ \t]/ && (Head !~ /;[ \t]*$/ || Head ~ /\{/))
+				{
+					Name = Head
+					sub(/^(class|struct|union)[ \t]+([A-Z]+_API[ \t]+)?/, "", Name)
+					sub(/[^A-Za-z0-9_].*$/, "", Name)
+					PendingScope = "class:" ((Head ~ /^class/) ? "class" : "struct") ":" Name
+				}
+				else if (Head ~ /^namespace([^A-Za-z0-9_]|$)/ || Head ~ /^extern[ \t]+"/)
+				{
+					PendingScope = "ns"
+				}
+				else if (Head ~ /^enum([^A-Za-z0-9_]|$)/)
+				{
+					PendingScope = "enum"
+				}
+			}
+			for (I = 1; I <= length(Scan); I++)
+			{
+				Ch = substr(Scan, I, 1)
+				if (Ch == "{")
+				{
+					if (AtStatementLevel())
+					{
+						FinishStatement()
+					}
+					PushScope((PendingScope == "") ? "block" : PendingScope)
+					PendingScope = ""
+				}
+				else if (Ch == "}")
+				{
+					PopScope()
+				}
+				else if (AtStatementLevel())
+				{
+					if (Ch == ";")
+					{
+						FinishStatement()
+						PendingScope = ""
+					}
+					else
+					{
+						if (Stmt == "")
+						{
+							if (Ch ~ /[ \t]/)
+							{
+								continue
+							}
+							StmtLine = LineNo
+							StmtRaw = Raw
+						}
+						Stmt = Stmt Ch
+					}
+				}
+			}
+			if (AtStatementLevel() && Stmt != "")
+			{
+				Stmt = Stmt " "
+			}
+		}
+
 		# awk needs a pattern and its opening brace on one line.
 		BEGIN {
 			IsHeader = (File ~ /\.(h|hpp)$/)
@@ -161,6 +709,13 @@ for File in "${Files[@]}"; do
 			FirstCode = ""
 			FirstInclude = ""
 			PrevLine = ""
+			Depth = 0
+			Stmt = ""
+			StmtTemplate = 0
+			PendingScope = ""
+			InPreproc = 0
+			# Longest first, so "<=>" wins over "<=" and "<".
+			OpTokenCount = split("<=> <<= >>= ->* -> () [] ++ -- == != <= >= && || << >> += -= *= /= %= &= |= ^= + - * / % & | ^ ! ~ < > = ,", OpTokens, " ")
 		}
 
 		{
@@ -460,6 +1015,11 @@ for File in "${Files[@]}"; do
 					sub(/^.*bool[ \t]+/, "", Name)
 					Terminator = substr(Name, length(Name), 1)
 					sub(/[ \t]*[;={,)]$/, "", Name)
+					# "bool operator==(...)" returns a bool; it declares no variable.
+					if (Name == "operator")
+					{
+						continue
+					}
 					if ((Terminator == "," || Terminator == ")") && Name ~ /^b[A-Z]/)
 					{
 						Hit("Naming: bool parameter takes no b prefix", N, Raw)
@@ -504,6 +1064,28 @@ for File in "${Files[@]}"; do
 					{
 						Hit("raylib rule 2: raylib-looking type or macro in a Public/ header", N, Raw)
 					}
+				}
+				if (Code ~ /(^|[^A-Za-z0-9_])template</)
+				{
+					Hit("Templates: write template <, with a space", N, Raw)
+				}
+				if (Code ~ /std::(unique_ptr|make_unique)([^A-Za-z0-9_]|$)/)
+				{
+					Hit("Ownership: TUniquePtr and Vertex::MakeUnique, never std::unique_ptr or std::make_unique", N, Raw)
+				}
+				# A type declared with its body on the same line: "struct VFoo {};".
+				if (Trimmed ~ /^(class|struct|union|enum)[ \t][^;{]*\{./)
+				{
+					Hit("Braces: opening brace not on its own line (Allman)", N, Raw)
+				}
+				# Preprocessor lines, and their continuations, stay out of the brace tracking.
+				if (InPreproc || Trimmed ~ /^#/)
+				{
+					InPreproc = (Raw ~ /\\[ \t]*$/)
+				}
+				else
+				{
+					ScanLayout(Code, Trimmed, N)
 				}
 			}
 			else if (IsDescriptor)

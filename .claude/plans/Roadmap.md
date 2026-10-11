@@ -39,7 +39,7 @@ This file says what Vertex builds, in what order, and where each feature stands.
 | M1.0 | CoreTests harness on doctest (chore) | Done | | #15 |
 | M1.1 | Asserts and Logging v2 | Done | [m1-asserts](m1-asserts.md) | #17 |
 | M1.7 | Numeric type aliases | Done | [m1-numeric-types](m1-numeric-types.md) | #20 |
-| M1.2 | Memory and `TUniquePtr` | Todo | | |
+| M1.2 | Memory and `TUniquePtr` | Done | [m1-unique-ptr](m1-unique-ptr.md) | #21 |
 | M1.8 | `TArrayView` | Todo | | |
 | M1.3 | `TArray` | Todo | | |
 | M1.9 | `VStringView` | Todo | | |
@@ -55,16 +55,10 @@ This file says what Vertex builds, in what order, and where each feature stands.
 
 ### M1.2: Memory and `TUniquePtr`
 
+- **Planned and decided:** see [m1-unique-ptr](m1-unique-ptr.md). `Core/Memory/UniquePtr.h` holds `TUniquePtr`, a move-only owner the size of a raw pointer, and `Vertex::MakeUnique`. A derived owner moves into a base one only when the base has a virtual destructor, which std and UE don't check. `*` and `->` assert on an empty owner, and a type that's only declared fails to build where it would be deleted.
+- **Conventions it set (CLAUDE.md):** a pointer type's `Get()` may return `nullptr`, the Getters row's one exception; `template <` with a space; a class template defines its member functions below the class, in declaration order; `noexcept` only on moves; `TUniquePtr` instead of `std::unique_ptr`.
 - **UE:** `Runtime/Core/Public/Templates/UniquePtr.h`, and `FMemory` in `Runtime/Core/Public/HAL/UnrealMemory.h`.
-- **Lesson from the old code:** the constructor from a raw pointer and the conversion to `bool` are both `explicit`.
-- **Forks to decide:**
-  1. **What "Memory" covers.** Recommendation: only `TUniquePtr` and `MakeUnique` for now. Allocator and `Malloc` wrappers wait for a trigger, such as memory tracking or a custom allocator for `TArray`.
-  2. **The shape of `TUniquePtr`.** It's move-only. Open: moving a derived pointer into a base one, an array form (`TUniquePtr<T[]>`), and custom deleters (UE's deleter template parameter).
-  3. **A naming clash.** CLAUDE.md's Getters row says `Get…` always succeeds and `Find…` may come back empty. But `Get()` on `std::unique_ptr` and on UE's `TUniquePtr` returns `nullptr` when empty. Options: `Get` asserts non-null and a `Find`-style accessor returns the maybe-null pointer, or the row gets an exception.
-  4. **Type-alias naming: no rule** (Fares, 2026-10-10, in M1.7). `TUniquePtr`'s element type gets its name on its card, with no fork.
-  5. **Asserts on misuse.** `VX_ASSERT` on a null dereference in `operator*` and `operator->`.
-  6. **Where the header lives:** `Core/Templates/UniquePtr.h` (UE's folder) or `Core/Memory/UniquePtr.h`. The tests mirror it.
-- **Tooling, Claude:** `TUniquePtr` is the first real class, which is the trigger for StyleScan's function-order check (see Tooling ideas).
+- **Tooling, Claude:** StyleScan gained its function-order check here.
 
 ### M1.8: `TArrayView`
 
@@ -85,6 +79,8 @@ This file says what Vertex builds, in what order, and where each feature stands.
 - **UE:** `Runtime/Core/Public/Containers/Array.h`.
 - Growth policy, move semantics, iterators, and bounds checks through the asserts.
 - Uses M1.8's size type. It converts to a `TArrayView` and accepts one: construction and `Append`, for example.
+- **Fork found in M1.2: how it grows.** Move each element into the new storage, which needs `noexcept` moves (`TUniquePtr` has them), or copy the raw bytes, as UE's `TArray` does, which needs element types that survive being moved bitwise. A `TArray<TUniquePtr<…>>` test proves whichever path is chosen.
+- **Deferred from M1.2:** `Malloc`/`Realloc`/`Free` wrappers, like UE's `FMemory`. `TArray`'s uninitialized storage is their first real caller, so planning decides here whether it needs them.
 
 ### M1.9: `VStringView`
 
@@ -105,6 +101,7 @@ This file says what Vertex builds, in what order, and where each feature stands.
 ### M1.5: Hashing, `TSet`, and `TMap`
 
 - **UE:** `Runtime/Core/Public/Templates/TypeHash.h`, `Runtime/Core/Public/Containers/Set.h`, and `Map.h` next to it.
+- **Deferred from M1.2:** comparison operators and a hash for `TUniquePtr`. It has none today, because comparing two owners only tells whether both are empty. Add them if a `TSet` or `TMap` needs to be keyed by an owner, or owners need sorting.
 
 ### M1.6: `VName`
 
@@ -139,6 +136,7 @@ This file says what Vertex builds, in what order, and where each feature stands.
 ### M2.2: `VApplicationWindow` and its raylib backend
 
 - The window type is backend-neutral. The raylib translation lives in `Platform/Raylib/RaylibApplicationWindow.cpp` (CLAUDE.md naming row for backend files).
+- **From M1.2:** a public header can hide backend state behind a `TUniquePtr` to a type it only declares (pimpl). The owning class then declares its destructor and move operations in its header and defines them in its `.cpp`, where the type is complete. Otherwise the build fails with C2027.
 
 ### M2.3: The Null backend, and choosing a backend at startup
 
@@ -211,12 +209,17 @@ Each item waits for its trigger. When one fires, `/roadmap` gives it an ID in th
 | **Math:** vectors and the like, plus float constants such as epsilon and infinity (deferred from M1.7; `std::numeric_limits` covers them until then) | The window or render work first needs it |
 | **A call stack in the assert Error line** | The first assert that's hard to trace from its file and line |
 | **`VX_CHECK_ALWAYS`**, which reports every failure, not only the first | The first real need |
-| **Per-module precompiled headers.** `<format>` costs about 0.3 s per file that includes `Log.h` or `Assert.h`. | Core's headers spread, or measured build-time pain |
+| **Per-module precompiled headers.** `<format>` costs about 0.3 s per file that includes `Log.h` or `Assert.h`. `UniquePtr.h` brings it in too, through `Assert.h` (M1.2), and M2's Runtime headers will include that one widely. | Core's headers spread, or measured build-time pain |
+| **Replacing the global `operator new` and `operator delete`,** so every allocation, `MakeUnique`'s included, can be tracked. UE does it with `REPLACEMENT_OPERATOR_NEW_AND_DELETE` (deferred from M1.2). | The first memory budget or leak hunt |
+| **An array form, `TUniquePtr<T[]>`** (deferred from M1.2). `TUniquePtr` rejects array types today. | A heap buffer that `TArray` can't serve |
+| **Custom deleters for `TUniquePtr`** (deferred from M1.2). On MSVC, an empty deleter needs `[[msvc::no_unique_address]]` or a private base to take no space: the standard `[[no_unique_address]]` is ignored. | The first object that isn't freed with `delete`, such as one from a pool or a C library |
+| **A named concept for `TUniquePtr`'s guard,** which is written out four times today. Naming the first concept is a convention fork (CLAUDE.md § Decided when first needed). | A third use of the constraint |
+| **An `ElementType` alias on `TUniquePtr`** (deferred from M1.2) | The first generic code that reads a pointer's element type |
 | **A standalone `Game` launcher.** Runtime never depends on Editor. | A game needs to ship without the editor |
 | **Promoting a Runtime folder to a module** | One of the triggers in CLAUDE.md § Runtime layering |
 | **`NOMINMAX` for Vertex modules,** so `<windows.h>` stops defining the `min` and `max` macros (deferred from M1.7). Build setup, so Claude writes it. | The first Vertex file that includes `<windows.h>` |
 | **A naming rule for type aliases.** Fares chose none in M1.7: each alias is named when it's written. | Fares asks for one |
-| **A Linux target** | Not set |
+| **A Linux target.** Clang will warn on `UniquePtrTests.cpp`'s move-into-itself test (`-Wself-move`), which MSVC accepts (found in M1.2). | Not set |
 
 ## Tooling ideas
 
@@ -224,7 +227,6 @@ Claude chores, offered but not scheduled. Each one gets a `chore/` branch when F
 
 | Idea | Trigger |
 |---|---|
-| A function-order check in StyleScan (CLAUDE.md § Declaration order) | The first real class: M1.2's `TUniquePtr` |
 | A StyleScan check that a Runtime private header never shares a public one's path | Fares asks |
 | A Setup/Clean guard that fails on stray `.h`/`.cpp` files under `Intermediate/` | Fares asks |
 | A `.clang-format` (Allman, tabs) for format-on-save | Fares asks |

@@ -137,6 +137,9 @@ Each module's unit tests build into their own console application at `Source/Tes
 
 - Allman braces (the opening brace on its own line) everywhere, including Lua tables. Indent with tabs (enforced by `.editorconfig`). Files are UTF-8 without BOM.
 - By-value parameters are `const` in the declaration and the definition alike, so the two signatures stay identical: `void WriteLog(const ELogLevel LogLevel, const std::string_view Format, const std::format_args Arguments);`. The compiler ignores that `const` in a declaration. In the definition, it stops the body from reassigning a parameter by accident.
+- A template head is written with a space: `template <typename TElement>` (Fares, agreed in M1.2, 2026-10-11). A constraint may follow on the same line: `template <typename TElement> requires (!std::is_array_v<TElement>)`. StyleScan flags `template<`.
+- `noexcept` goes on move constructors and move assignments, and on nothing that can fail an assert (agreed in M1.2, 2026-10-11). Containers check a move's `noexcept` to decide between moving and copying as they grow. A test's assert handler throws through a failed assert, and `noexcept` would turn that throw into `std::terminate` (see Asserts).
+- A heap object is owned by a `TUniquePtr` and created with `Vertex::MakeUnique` (`Core/Memory/UniquePtr.h`), never with `std::unique_ptr`, `std::make_unique`, or a `new` whose result isn't handed straight to an owner (agreed in M1.2, 2026-10-11). StyleScan flags the `std` names.
 
 ### C++ naming (agreed in M0 step 7)
 
@@ -151,7 +154,7 @@ Each module's unit tests build into their own console application at `Source/Tes
 | Bool parameters | No `b` | `SetVSync(bool VSync)` |
 | Parameters | `In` only when the name would match a member; `Out` always on output parameters | `SetDesc(const VWindowDesc& InDesc)`, `bool& OutSucceeded` |
 | Free functions | Inside `namespace Vertex`; internals that a header must expose go inside `Vertex::Private`; helpers used by one `.cpp` only go in an anonymous namespace | `Vertex::InitializeEngine()` |
-| Getters | `Get…` always succeeds: it returns a value or a reference, and asserts if it can't. `Find…` may come back empty: `nullptr`, an empty `std::optional`, or a not-found index. A `bool` getter asks a question and never starts with `Get` or `Find`. No `TryGet…`: a lookup that can fail is a `Find`. | `GetMode()`, `FindChild(Name)`, `IsVisible()` |
+| Getters | `Get…` always succeeds: it returns a value or a reference, and asserts if it can't. `Find…` may come back empty: `nullptr`, an empty `std::optional`, or a not-found index. A `bool` getter asks a question and never starts with `Get` or `Find`. No `TryGet…`: a lookup that can fail is a `Find`. A pointer type's `Get()` is the one exception: it returns the raw pointer, or `nullptr` when empty (agreed in M1.2, 2026-10-11). | `GetMode()`, `FindChild(Name)`, `IsVisible()`, `Owner.Get()` |
 | Constants | `constexpr`, PascalCase, never `#define`. A constant a header shares is `inline constexpr`, inside `namespace Vertex` (agreed in M1.7, 2026-10-10). The Global variables row is about mutable state. | `MaxLogLineLength`, `Vertex::MaxInt32` |
 | Numeric types (agreed in M1.7, 2026-10-10) | The global aliases in `Core/Types/NumericTypes.h`: `int8`…`int64`, `uint8`…`uint64`, `intptr`, `uintptr`, `usize`, `float32`, `float64`. Lowercase, no prefix, no namespace. Their limits are `Vertex::Min…`/`Vertex::Max…`. See § Numeric types for when to use them. | `int32 Count`, `usize Size`, `Vertex::MaxUInt64` |
 | Global variables (agreed in M1, 2026-10-08) | File-local only: in a `.cpp`'s anonymous namespace, PascalCase, no prefix. `constinit` when the initializer is a constant. Other files reach one through functions, never `extern`. | `AssertHandler`, changed through `SetAssertHandler()` |
@@ -167,6 +170,7 @@ Why:
 - The standard library and the language look some names up by their exact spelling: `std::back_inserter` calls `push_back` and reads `value_type`, and a range-for loop calls `begin()` and `end()`. Renaming them to PascalCase breaks the code that uses them. UE's `TArray` keeps lowercase `begin()`/`end()` for the same reason.
 - A method parameter with the same name as a member hides it ("shadowing"), which is warning C4458. At `/W4` with warnings as errors, that fails the build. Hence the `In` rule.
 - The `Find`/`Get` split tells a caller from the name alone whether the result needs a null check. UE's containers follow it: `TLruCache::Find` returns `nullptr` for a missing key, while `FindChecked` asserts.
+- A pointer type (`TUniquePtr` now, `TObjectPtr` and weak pointers later) keeps the `Get()` that std and UE give it, returning a pointer that may be null (Fares, M1.2). Holding something that may be null is that type's whole job, and anyone who has used `std::unique_ptr` or UE's `TUniquePtr` reads `Get()` that way.
 - A backend `.cpp` repeats its folder's name so that basenames stay unique. MSBuild compiles every file in a project into one object folder, so a `Raylib/PlatformInit.cpp` and a `Null/PlatformInit.cpp` would both produce `PlatformInit.obj`. UE does the same with `Windows/WindowsPlatformMisc.cpp`.
 - A `constexpr` variable at namespace scope is also `const`, which gives every file that includes its header a private copy. When an inline function binds a reference to one (`std::format` takes its arguments by reference), each file's copy of that function points at a different object, which breaks the one-definition rule without a diagnostic. `inline` makes it one object for the whole program.
 
@@ -236,7 +240,7 @@ In each access section, functions come in this order:
 | 3 | Destructor | |
 | 4 | Virtual | `virtual` or `override`. New virtuals first, then overrides grouped by base class, in the order the bases are declared |
 | 5 | Static | `static` |
-| 6 | Template | `template<…>` |
+| 6 | Template | `template <…>` |
 | 7 | Normal | Core work: everything that isn't a getter |
 | 8 | Setters | `Set…` |
 | 9 | Other getters | Getters that return something other than `bool`, without a `Get` or `Find` prefix: `Num()`, `Length()` |
@@ -345,11 +349,26 @@ private:
 
 A `.cpp` (or `.inl`) defines its functions in the order the header declares them. Helpers in the `.cpp`'s anonymous namespace sit above those definitions.
 
+A class template declares its member functions inside the class and defines them below every declaration in its header, in the same order (Fares, agreed in M1.2, 2026-10-11). Each definition repeats the class's template head, and a member template stacks its own head under it:
+
+```cpp
+template <typename TElement> requires (!std::is_array_v<TElement>)
+template <typename TOtherElement> requires std::is_convertible_v<TOtherElement*, TElement*>
+TUniquePtr<TElement>::TUniquePtr(TUniquePtr<TOtherElement>&& OtherUniquePtr) noexcept
+	: Element(OtherUniquePtr.Release())
+{}
+```
+
+Two traps come with it:
+- **Each definition's template head must match the declaration's**, constraint included, token for token. A mismatch fails with C2244.
+- **A return type spells out the class's template arguments:** `TUniquePtr<TElement>& TUniquePtr<TElement>::operator=(…)`. The compiler reads the return type before it reaches `TUniquePtr<TElement>::`, so it doesn't know yet that it's inside the class, and a bare `TUniquePtr&` fails with C2955. The parameters come after, so they can say `TUniquePtr&&`.
+
 Why:
 - A reader finds the whole API in one block and the whole state in another. The variables block shows what the object owns at a glance.
 - The fixed function order tells a reader where to look: how to make and destroy one first, then the dispatch-heavy functions, the core work, the read-only API, and the operators last.
 - "First matching row wins" means two people sort the same class the same way.
 - Matching order lets you read the `.h` and the `.cpp` side by side. A new function lands in the same place in both files, which keeps diffs predictable.
+- A class template's body reads as its API, like a header whose code lives in a `.cpp`. Fares chose that over defining the functions inside the class, as UE and the standard library do. The split buys no build time: a template's code has to be visible to every caller, so it stays in the header either way.
 
 ### Comments
 
@@ -363,7 +382,7 @@ Every declaration in a header, `Public/` or `Private/`, with no exceptions:
 - variables at namespace or class scope: members, statics, globals, and constants;
 - enums, and every enum value.
 
-Never commented: namespaces, type aliases, macros, concepts, local variables, anything inside a function body, and anything in a `.cpp` or `.inl` besides its copyright line (see Implementation code below).
+Never commented: namespaces, type aliases, macros, concepts, local variables, anything inside a function body, a class template's member definitions below the class (the declaration inside the class holds the comment), and anything in a `.cpp` or `.inl` besides its copyright line (see Implementation code below).
 
 #### Format
 
@@ -414,7 +433,7 @@ An override gets only a one-line comment saying what differs from the base versi
  * @note Every call flushes, which costs a write to the OS. Keep logging out of per-frame code.
  * @note Formats into a 1024-character stack buffer, not the heap. Longer lines are cut.
  */
-template<typename... TArguments>
+template <typename... TArguments>
 void Log(const ELogLevel LogLevel, const std::format_string<TArguments...> Format, TArguments&&... Arguments)
 ```
 
@@ -424,6 +443,7 @@ A summary of what the type is and the role it plays in the engine, then these ta
 
 | Tag | The question it answers | Required |
 |---|---|---|
+| `@tparam <Name>` | What does the template parameter stand for, and what may it not be? One per template parameter. | Every class template (agreed in M1.2, 2026-10-11) |
 | `@inherits <Base>` | What does this type change from that base, and why does it derive from it? One per direct base. | Every derived type |
 | `@ownership` | Who creates, owns, and destroys it? Can it be copied or moved? Does it own its resources or borrow them? | Always |
 | `@lifetime` | When does it become valid, when does it die, and what invalidates it or pointers into it? | Always |
