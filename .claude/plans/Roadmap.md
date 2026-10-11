@@ -38,11 +38,26 @@ This file says what Vertex builds, in what order, and where each feature stands.
 |---|---|---|---|---|
 | M1.0 | CoreTests harness on doctest (chore) | Done | | #15 |
 | M1.1 | Asserts and Logging v2 | Done | [m1-asserts](m1-asserts.md) | #17 |
+| M1.7 | Integer type aliases | Todo | | |
 | M1.2 | Memory and `TUniquePtr` | Todo | | |
+| M1.8 | `TArrayView` | Todo | | |
 | M1.3 | `TArray` | Todo | | |
+| M1.9 | `VStringView` | Todo | | |
 | M1.4 | `VString` | Todo | | |
 | M1.5 | Hashing, `TSet`, and `TMap` | Todo | | |
 | M1.6 | `VName` | Todo | | |
+
+### M1.7: Integer type aliases
+
+- **UE:** `FGenericPlatformTypes` in `Runtime/Core/Public/GenericPlatform/GenericPlatform.h`. `Runtime/Core/Public/HAL/Platform.h` publishes it as the global names `int32`, `uint8`, and so on.
+- **Why now:** M1.2 and M1.8 are the first features that need integer types for sizes. Only five `std` integer uses exist to migrate: `std::uint8_t` twice and `std::size_t` three times.
+- In C++20, `std::int32_t` is already exactly 32 bits everywhere. The alias buys a shorter name that Vertex owns, not portability. UE's aliases date from compilers that lacked `<cstdint>`.
+- **Not `String`:** `VString` is M1.4. An alias of `std::string` would spread std's API (`size()`, `c_str()`) that `VString` would then have to copy or break.
+- **Forks to decide:**
+  1. **The type-alias naming rule** (CLAUDE.md § Decided when first needed): `int32` as UE spells it, `Int32`, or another form. Moved here from M1.2.
+  2. **Which aliases.** `int8`–`int64` and `uint8`–`uint64`. Open: a pointer-sized integer. Floats stay `float` and `double`: they're already 32 and 64 bits on every target. Character types wait for M1.9.
+  3. **Global, or inside `namespace Vertex`.** Vertex types are global and prefixed against name clashes. An integer alias may get neither.
+  4. **Where the header lives** (UE: `CoreTypes.h`), and whether `static_assert` in the header or tests prove the sizes.
 
 ### M1.2: Memory and `TUniquePtr`
 
@@ -52,23 +67,44 @@ This file says what Vertex builds, in what order, and where each feature stands.
   1. **What "Memory" covers.** Recommendation: only `TUniquePtr` and `MakeUnique` for now. Allocator and `Malloc` wrappers wait for a trigger, such as memory tracking or a custom allocator for `TArray`.
   2. **The shape of `TUniquePtr`.** It's move-only. Open: moving a derived pointer into a base one, an array form (`TUniquePtr<T[]>`), and custom deleters (UE's deleter template parameter).
   3. **A naming clash.** CLAUDE.md's Getters row says `Get…` always succeeds and `Find…` may come back empty. But `Get()` on `std::unique_ptr` and on UE's `TUniquePtr` returns `nullptr` when empty. Options: `Get` asserts non-null and a `Find`-style accessor returns the maybe-null pointer, or the row gets an exception.
-  4. **Type-alias naming** (CLAUDE.md § Decided when first needed). `TUniquePtr`'s element type needs it first, then `TArray`'s size type. `SetAssertHandler` used a trailing return type to put this off.
+  4. **Type-alias naming** is decided in M1.7, which comes first. `TUniquePtr`'s element type is the first member alias that uses the rule.
   5. **Asserts on misuse.** `VX_ASSERT` on a null dereference in `operator*` and `operator->`.
   6. **Where the header lives:** `Core/Templates/UniquePtr.h` (UE's folder) or `Core/Memory/UniquePtr.h`. The tests mirror it.
 - **Tooling, Claude:** `TUniquePtr` is the first real class, which is the trigger for StyleScan's function-order check (see Tooling ideas).
+
+### M1.8: `TArrayView`
+
+- **UE:** `Runtime/Core/Public/Containers/ArrayView.h`.
+- A non-owning view of contiguous elements: a pointer and a count. A function that only reads takes one, so a caller can pass a `TArray`, a C array, or part of either.
+- It comes before `TArray`, whose API takes and returns views. The owner knows the view; the view never knows the owner. UE's `ArrayView.h` includes `Array.h`, the other direction.
+- **Why not `std::span`:** Vertex's size type, bounds checks through `VX_ASSERT` (`std::span`'s `[]` checks nothing), and Vertex's naming.
+- **Forks to decide:**
+  1. **The index and size type policy.** Moved here from M1.3. The old code mixed an `int8` `INDEX_NONE` with an unsigned size.
+  2. **The size alias's name.** Moved here from M1.3. Not `TSize`: it would read like a class template.
+  3. **Read-only views:** `TArrayView<const T>`, as UE and `std::span` do it, or a separate type.
+- **Trap to document:** a view dangles when its source grows or is destroyed. Its `@lifetime` says so.
 
 ### M1.3: `TArray`
 
 - **UE:** `Runtime/Core/Public/Containers/Array.h`.
 - Growth policy, move semantics, iterators, and bounds checks through the asserts.
+- Uses M1.8's size type. It converts to a `TArrayView` and accepts one: construction and `Append`, for example.
+
+### M1.9: `VStringView`
+
+- **UE:** `TStringView` in `Runtime/Core/Public/Containers/StringView.h`. It doesn't include `FString`'s header; `FString`'s API takes views.
+- A non-owning view of characters: a pointer and a length, not null-terminated.
+- It comes before `VString`, whose API takes views.
 - **Forks to decide:**
-  1. **The index and size type policy.** The old code mixed an `int8` `INDEX_NONE` with an unsigned size.
-  2. **The size alias's name.** Not `TSize`: it would read like a class template.
+  1. **The encoding and the character type.** Moved here from M1.4. UTF-8 is the likely answer; then `char` or `char8_t`.
+  2. **Built on `TArrayView`, or standalone.**
+  3. **Replacing `std::string_view` in `Log.h` and `Assert.h`:** now or later. `std::format` needs a formatter for `VStringView` either way.
+- **Trap to document:** a view isn't null-terminated, so passing it to a C API such as raylib's needs a copy.
 
 ### M1.4: `VString`
 
 - **UE:** `FString` in `Runtime/Core/Public/Containers/UnrealString.h`.
-- An owning string with an encoding policy. UTF-8 is the likely answer.
+- An owning string. Its encoding comes from M1.9, and its API takes `VStringView`.
 
 ### M1.5: Hashing, `TSet`, and `TMap`
 
