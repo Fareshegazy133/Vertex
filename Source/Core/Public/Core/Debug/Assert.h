@@ -96,7 +96,7 @@ namespace Vertex
 		 * @param Format The message's format string. The compiler checks it against Arguments, in every configuration.
 		 * @param Arguments The message's values. Only read once the assert has failed.
 		 */
-		template<typename... TArguments>
+		template <typename... TArguments>
 		[[noreturn]] void FailAssert(const EAssertKind AssertKind, const std::string_view Expression, const std::source_location& Location, const std::format_string<TArguments...> Format, TArguments&&... Arguments)
 		{
 			HandleAssertFailure(AssertKind, Expression, Location, Format.get(), std::make_format_args(Arguments...));
@@ -122,7 +122,7 @@ namespace Vertex
 		 * @param Format The message's format string. The compiler checks it against Arguments, in every configuration.
 		 * @param Arguments The message's values. Only read once the check has failed.
 		 */
-		template<typename... TArguments>
+		template <typename... TArguments>
 		void FailCheck(const std::string_view Expression, const std::source_location& Location, const std::format_string<TArguments...> Format, TArguments&&... Arguments)
 		{
 			HandleCheckFailure(Expression, Location, Format.get(), std::make_format_args(Arguments...));

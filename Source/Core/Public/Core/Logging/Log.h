@@ -48,7 +48,7 @@ namespace Vertex
 	 * @note Every call flushes, which costs a write to the OS. Keep logging out of per-frame code.
 	 * @note Formats into a 1024-character stack buffer, not the heap. Longer lines are cut.
 	 */
-	template<typename... TArguments>
+	template <typename... TArguments>
 	void Log(const ELogLevel LogLevel, const std::format_string<TArguments...> Format, TArguments&&... Arguments)
 	{
 		Private::WriteLog(LogLevel, Format.get(), std::make_format_args(Arguments...));

@@ -1,6 +1,6 @@
 # M1.2: Memory and `TUniquePtr`
 
-**Status:** approved 2026-10-11
+**Status:** done 2026-10-11
 **Branch:** `feature/m1-unique-ptr`
 **Roadmap:** M1, Core types
 
@@ -49,7 +49,7 @@ When this feature is done:
 - **`Release()` hands the object to the caller; `Reset()` deletes it.** `Reset()` takes no pointer. UE's `Reset(T*)` takes a `T*`, so a derived pointer converts on the way in and the guard never sees it. Adopting a new raw pointer is `Ptr = TUniquePtr<VFoo>(Raw);`, which the guard checks.
 - **The converting move takes the pointer through `Other.Release()`**, so two versions of the class never need to be friends.
 - **`noexcept` goes on the two moves only.** Containers check it to decide between moving and copying. It never goes on a function that can fail an assert: CoreTests' handler throws through a failed assert (CLAUDE.md § Asserts), and `noexcept` would turn that into `std::terminate`.
-- **`[[nodiscard]]` goes on `Release()` and `MakeUnique`.** Dropping either result leaks the object, and the prototype showed it fails the build (C4834).
+- **`[[nodiscard]]` goes on `Release()` and `MakeUnique`.** Dropping `Release()`'s result leaks the object, and the prototype showed it fails the build (C4834). Dropping `MakeUnique`'s result creates the object and deletes it at once, which is always a bug.
 - **No comparison operators.** Two owners never point at the same object, so comparing them only tells whether both are empty, and `IsValid()` answers that.
 - **`MakeUnique` passes its arguments in parentheses**, so C++20 builds an aggregate from them: `MakeUnique<VSize>(800, 600)` works without a constructor.
 - **No `ElementType` alias yet.** No code reads a pointer's element type today.
@@ -107,30 +107,31 @@ The `Core/` and `Tests/` paths are under `Source/`. Create new files on disk, th
 
 Each card gets a full walkthrough when we reach it. `/implement-feature` ticks a card once it builds and passes review. Each card adds its own tests, and some end with a build that must fail, which is undone before moving on.
 
-- [ ] **Card 1: The owner.** Create `UniquePtr.h`: the class, with array types rejected, the default and `nullptr` constructors, the `explicit` constructor from a raw pointer, the deleted copy, the destructor and its complete-type check, `Get()`, `IsValid()`, `explicit operator bool`, and `MakeUnique`. Create the test file with tests 1–3. Then watch three builds fail: an array type, a declared-only type, and an implicit adoption.
+- [x] **Card 1: The owner.** Create `UniquePtr.h`: the class, with array types rejected, the default and `nullptr` constructors, the `explicit` constructor from a raw pointer, the deleted copy, the destructor and its complete-type check, `Get()`, `IsValid()`, `explicit operator bool`, and `MakeUnique`. Create the test file with tests 1–3. Then watch three builds fail: an array type, a declared-only type, and an implicit adoption.
   *Why here:* every later card moves, hands over, or reaches the object this card owns.
-- [ ] **Card 2: Reaching the object.** `operator*` and `operator->`, each asserting when the pointer is empty. Test 4.
+- [x] **Card 2: Reaching the object.** `operator*` and `operator->`, each asserting when the pointer is empty. Test 4.
   *Why here:* the later cards' tests read the object through `->`. It's also the first function that must not be `noexcept`.
-- [ ] **Card 3: Handing it over.** `Release()` and `Reset()`, each letting go of the object before anything is deleted. Tests 5 and 6. Then watch an ignored `Release()` fail the build.
+- [x] **Card 3: Handing it over.** `Release()` and `Reset()`, each letting go of the object before anything is deleted. Tests 5 and 6. Then watch an ignored `Release()` fail the build.
   *Why here:* the moves in card 4 are built on `Release()`.
-- [ ] **Card 4: Moving it.** The move constructor and move assignment, both `noexcept`, with the old object deleted last and a move into itself made safe. Tests 7–9, and the compile-time proofs that it can't be copied and that its moves are `noexcept`.
+- [x] **Card 4: Moving it.** The move constructor and move assignment, both `noexcept`, with the old object deleted last and a move into itself made safe. Tests 7–9, and the compile-time proofs that it can't be copied and that its moves are `noexcept`.
   *Why here:* it needs `Release()` from card 3.
-- [ ] **Card 5: Derived to base.** The guard, on the constructor from a raw pointer and on the converting move. Test 10, and the compile-time proofs of what the guard accepts and rejects. Then watch a move into a base without a virtual destructor fail the build.
+- [x] **Card 5: Derived to base.** The guard, on the constructor from a raw pointer and on the converting move. Test 10, and the compile-time proofs of what the guard accepts and rejects. Then watch a move into a base without a virtual destructor fail the build.
   *Why here:* the guard sits on two constructors that exist by now, and it's the one idea that std's version doesn't have.
 
 ## Tests
 
 In all three configurations, they prove:
 1. `TUniquePtr`: is empty when default-constructed or made from `nullptr`.
-2. `TUniquePtr`: `MakeUnique` passes its arguments to the constructor.
+2. `TUniquePtr`: `MakeUnique` builds the object from its arguments.
 3. `TUniquePtr`: deletes its object when it's destroyed.
-4. `TUniquePtr`: `*` and `->` assert when it's empty (in Debug and Development; Shipping has no assert to catch).
+4. `TUniquePtr`: `*` and `->` assert when it's empty. Debug and Development only: Shipping has no assert, and an empty dereference there is undefined behavior, so the test is compiled out.
 5. `TUniquePtr`: `Release` hands over the object without deleting it.
 6. `TUniquePtr`: `Reset` lets go of the object, then deletes it.
 7. `TUniquePtr`: a move leaves the source empty and the object alive.
 8. `TUniquePtr`: move assignment takes the new object, then deletes the old one.
 9. `TUniquePtr`: move-assigning to itself keeps the object.
 10. `TUniquePtr`: deletes a derived object through its base.
+11. `TUniquePtr`: Release and Reset are safe on an empty owner (added during review).
 
 And at compile time (`static_assert`, CLAUDE.md § Tests):
 - It's the size of a raw pointer.
@@ -141,7 +142,7 @@ And at compile time (`static_assert`, CLAUDE.md § Tests):
 ## How we know it works
 
 - The whole solution builds with zero warnings in Debug, Development, and Shipping.
-- `VertexCoreTests.exe` passes 25/25 in all three (the 15 existing tests and these 10).
+- `VertexCoreTests.exe` passes 26/26 in Debug and Development (the 15 existing tests and these 11), and 25/25 in Shipping, which has no test 4.
 - Each card's must-fail build fails with the expected error: C7602 for an array type, C2027 for a declared-only type, C4834 for an ignored `Release()`, and C2440 for a base without a virtual destructor. Each one is undone.
 - StyleScan's function-order check passes on `UniquePtr.h` and fires on a test fixture with a misordered class.
 
@@ -154,10 +155,35 @@ Before writing this plan, Claude prototyped the whole shape in the scratchpad, w
    - CLAUDE.md § Code style: `noexcept` goes on move constructors and move assignments, where containers check it, and never on a function that can fail an assert.
    - CLAUDE.md § Code style: Vertex code owns heap objects through `TUniquePtr` and `MakeUnique`, never `std::unique_ptr`, `std::make_unique`, or a naked `new`/`delete`.
    - `/review` (`.claude/skills/review/SKILL.md`): the Getters exception, the `noexcept` rule, and the Ownership bullet names `TUniquePtr` instead of `std::unique_ptr`.
-   - StyleScan: the function-order check (CLAUDE.md § Declaration order), tested against `UniquePtr.h` and a misordered fixture. A flag on `std::unique_ptr` and `std::make_unique`.
+   - StyleScan: the function-order check (CLAUDE.md § Declaration order), tested against `UniquePtr.h` and a misordered fixture. It also checks that a class template's out-of-line definitions follow its declaration order. A flag on `std::unique_ptr` and `std::make_unique`.
    - Roadmap: the function-order idea comes off Tooling ideas.
+   - CLAUDE.md § Comments, Classes: a class template's comment opens its tags with one `@tparam` per template parameter, as a function's does (added during card 1).
+   - CLAUDE.md § Code style: a template head is written `template <typename …>`, with a space (Fares, card 1). StyleScan flags `template<`.
+   - CLAUDE.md § File layout: a class template declares its member functions in the class and defines them below every declaration in its header, in declaration order (Fares, card 1). CLAUDE.md § Comments: those definitions carry no comment, because the declaration in the class holds it. The review skill checks both.
 2. **Review:** `/review`, until "Review passed".
 3. **Ship:** `/ship-feature`, when Fares says so.
+
+## Added during implementation (2026-10-11)
+
+- **Card 1:** Fares named the member `Element` (and the constructor's parameter `Data`), not `Ptr`. `DeleteElement` takes a `const TElement*`, because `delete` works through a pointer to `const`.
+- **Card 1:** a class template's comment needs `@tparam`, which CLAUDE.md § Comments only lists for functions. The comments use it, and the docs step records it.
+- **Card 1:** the `[[nodiscard]]` reason for `MakeUnique` was wrong in the plan. Dropping its result doesn't leak: the temporary owner deletes the object at once. It's still always a bug, so the attribute stays.
+- **Card 1, where a template's function bodies go (Fares chose B).** The class declares its member functions, and their definitions sit below every declaration in the header, in declaration order, with no comments. The other options were defining them inside the class (A, as UE and std do; Claude recommended it) or in a `.inl` file (C). The cost Fares accepted: every definition repeats the class's template head, and a mismatch fails with C2244.
+- **Card 1, style (Fares).** A template head is written `template <typename …>`, with a space. Claude moved the three existing heads in `Log.h` and `Assert.h`, and CLAUDE.md's examples. `IsValid()` returns the pointer through its implicit conversion to `bool`.
+- **Card 1:** `DeleteElement`'s parameter shared the member's name, `Element`. CLAUDE.md § C++ naming gives such a parameter `In`, and MSVC doesn't warn inside a static function (C4458 skips them; Claude checked). Card 2's first step renames it to `InElement`.
+- **Card 3:** Fares declared `Reset()` above `Release()`; both are row 7, so either order fits. Test 5 first used CTAD (`const TUniquePtr NewOwner(Released)`), which card 5's template constructor can't deduce (C2641), so card 4 spelled out `TUniquePtr<VTracked>`.
+- **Card 4:** test 8's owner isn't empty after a move assignment, so `VWatcher` now asks whether its owner let go of it (`bOwnerLetGo`, `Get() != this`) instead of whether the owner is empty. Test 6 uses the same flag.
+- **Card 5:** Fares named the guard's parameter `TOtherElement`. His first build kept the raw-pointer constructor's parameter as `TElement*`, so `TOtherElement` couldn't be deduced and the constructor accepted nothing. He found it from the C2665 diagnostics.
+- **Docs step, StyleScan:** besides the function-order check, it flags `template<`, `std::unique_ptr` and `std::make_unique`, and a type whose body sits on its declaration line (`struct VFoo {};`, which the Allman check missed). It also stops reading `bool operator==` as a `bool` variable named `operator`.
+
+## Added during review (2026-10-11)
+
+- **Test 11 (Fares):** `Release` and `Reset` on an empty owner. Both were documented and unproven, and an empty owner is the common case, as when shutdown code resets a subsystem that never started.
+- **`Release`'s comment (Claude):** it no longer suggests deleting the result. It says to give the result to a new owner, or to code that takes ownership of it.
+- **INFO items Fares skipped:**
+  - `static_assert`s that pin moving a derived owner into an existing base owner. It works through the converting constructor and the move assignment, and Claude checked it, including the rejection.
+  - `UniquePtr.h` brings `<format>` into every includer through `Assert.h`. Measure it when M2's Runtime headers start to include it: that's the trigger for the Unscheduled precompiled-header item.
+  - Test 9's `Owner = std::move(Owner);` will warn under Clang (`-Wself-move`). Revisit if the Linux target lands.
 
 ## Later (not in this feature)
 

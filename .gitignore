@@ -20,5 +20,6 @@
 .vs/
 .idea/
 *.DotSettings.user
+*.sln.DotSettings
 Thumbs.db
 .DS_Store

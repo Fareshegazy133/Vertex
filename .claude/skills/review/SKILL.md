@@ -109,11 +109,11 @@ Check every row of the table. The scan covers type, enum, template-parameter, ma
 - Numeric types (CLAUDE.md § Numeric types): every integer and float uses an alias from `Core/Types/NumericTypes.h`. The scan flags built-in and `std` spellings. Drop the hits that are CLAUDE.md's exceptions: today, `printf`'s precision in `Log.cpp` and HeaderTool's `Run` exit code. Also flag an overload set that takes both `uint64` and `usize`, or both `int64` and `intptr`.
 - A file is named after its main type, without the prefix (`TArray` → `Array.h`).
 - A class template gets `T`, a plain class gets `V`. The scan can't tell which one a class is.
-- Getters (the Getters row): `Get…` always succeeds, so a `Get` that can return `nullptr`, an empty `std::optional`, or a not-found index is really a `Find`. A `bool` getter never starts with `Get` or `Find`. No `TryGet…`.
+- Getters (the Getters row): `Get…` always succeeds, so a `Get` that can return `nullptr`, an empty `std::optional`, or a not-found index is really a `Find`. The one exception is a pointer type's `Get()` (`TUniquePtr::Get`), which returns its raw pointer or `nullptr`, as std and UE do. A `bool` getter never starts with `Get` or `Find`. No `TryGet…`.
 
 ### 5. File layout (CLAUDE.md § File layout, § Declaration order, § Source layout per module)
 - The copyright line comes first in every `.h`, `.cpp`, and `.inl`. Headers follow it with `#pragma once`.
-- **Class layout (CLAUDE.md § Declaration order).** The scan can't see this yet, so read every changed class, struct, and union, and check each rule:
+- **Class layout (CLAUDE.md § Declaration order).** The scan checks it heuristically: the three groups, the access order inside each, restated access specifiers, the 13 function rows, the constructor order inside row 2, the seven operator steps, and the order of a class template's definitions below the class. It skips a `const` function that returns neither `bool` nor `void` and has no `Get`, `Find`, or `Set` prefix, because that could be a normal function or an other getter. It also skips the order inside an operator step and row 4's grouping by base class. Confirm every hit, read those gaps yourself, and check each rule:
   - Types, then functions, then variables. Each group runs `public` → `protected` → `private`. Flag a data member inside the functions block, and a function declared below the first variable. Two adjacent sections with the same access specifier are correct. A struct whose members are all public writes no specifiers at all; one non-public member brings the full rule back.
   - Types group: macros first, above the first access specifier, then aliases and nested types, each declared before anything that uses it.
   - Functions, in each access section, follow the 13 rows of the table. Classify each function: constructors, the destructor, and operators go to their own rows by syntax. Every other function goes to the first of rows 4–12 it fits. Then confirm the rows never go backwards. Quote the out-of-place function and the row it belongs in.
@@ -123,6 +123,8 @@ Check every row of the table. The scan covers type, enum, template-parameter, ma
   - A `const`/non-`const` overload pair stays adjacent, `const` version first. Related functions stay together within a row.
   - Variable order within an access section is undecided (§ Decided when first needed). Don't flag it. If a pattern shows up, raise it under **Convention governance**.
 - A `.cpp` or `.inl` defines its functions in the header's declaration order, with anonymous-namespace helpers above them. Compare the two files side by side.
+- A class template declares its member functions in the class and defines them below every declaration in its header, in declaration order. Each definition repeats the class's template head, constraint included, and a return type spells out the template arguments (C2955 otherwise). The scan checks the order.
+- A template head is written `template <typename …>`, with a space. The scan flags `template<`.
 - Includes are written from the module's include root. Core's public headers live under `Public/Core/…`. `Private/` mirrors `Public/` without the module folder.
 - Includes follow the three-run order in CLAUDE.md § File layout. The scan checks it. Include order is Owner: Claude: Fares includes in any order, and Claude fixes it silently, without reporting it.
 - A `.cpp` includes its own header first.
@@ -160,10 +162,10 @@ Vertex builds at `/W4` with warnings as errors, plus C4062. Each item below is a
 
 ### 11. Documentation (CLAUDE.md § Code style, Comments)
 CLAUDE.md holds the tag tables. Check against them; don't restate them here.
-- **Coverage (ERROR).** Every class, struct, union, function, namespace- or class-scope variable, enum, and enum value declared in a header has a comment. The scan can't see a missing one, so read every changed header declaration.
+- **Coverage (ERROR).** Every class, struct, union, function, namespace- or class-scope variable, enum, and enum value declared in a header has a comment. A class template's member definitions below the class carry none: the declaration inside the class holds it. The scan can't see a missing one, so read every changed header declaration.
 - **Nothing extra (ERROR).** Namespaces, type aliases, macros, concepts, locals, and function bodies carry no comment, and a `.cpp` or `.inl` carries none besides its copyright line. The scan catches the `.cpp`/`.inl` case. Read the bodies of inline functions in headers yourself.
 - **Header comment (ERROR).** Present exactly when the header holds two or more top-level classes, structs, or unions, or none. It never lists the file's contents.
-- **Tags (ERROR).** Functions: summary, then `@tparam`, `@param`, `@return` (every non-void function), `@warning`, `@note`, each where it applies, in that order. An override, and a `= delete` function, has a one-line comment only. Classes, structs, unions: summary, then `@inherits` per direct base, the four always-required tags, and the conditional ones that apply, in table order. Enums: what it's for, and each value's meaning. A serialized enum carries the append-only `@warning`.
+- **Tags (ERROR).** Functions: summary, then `@tparam`, `@param`, `@return` (every non-void function), `@warning`, `@note`, each where it applies, in that order. An override, and a `= delete` function, has a one-line comment only. Classes, structs, unions: summary, then `@tparam` per template parameter for a class template, `@inherits` per direct base, the four always-required tags, and the conditional ones that apply, in table order. Enums: what it's for, and each value's meaning. A serialized enum carries the append-only `@warning`.
 - **Format (ERROR).** The scan checks the mechanical forms: `/** … */` on one line, the block shape, comments on their own lines, no `//` except the copyright line, no `@info`, a blank line after every enum value but the last, a blank line before every commented declaration, and none after an access specifier.
 - **Content (WARNING).** A comment that restates the code instead of saying why.
 - A comment the change made wrong is stale: a WARNING.
@@ -200,7 +202,7 @@ One to three specific strengths, and why each matters.
 
 ### Ownership & lifetime
 - For every new piece of state: who owns it, who may change it, and who needs to see it?
-- Every resource (window, GPU handle, file) has an RAII owner. No naked `new`/`delete`. `std::unique_ptr` expresses single ownership. Raw pointers and references are non-owning.
+- Every resource (window, GPU handle, file) has an RAII owner. A heap object is owned by a `TUniquePtr` and created with `Vertex::MakeUnique`. No `std::unique_ptr`, no `std::make_unique` (the scan flags both), and no `new` whose result isn't handed straight to an owner. Raw pointers and references are non-owning.
 - A `std::string_view` or `std::span` is never stored past the call unless its owner outlives it. It's never assumed to be null-terminated: pass it to C APIs with a length, the way `Log.cpp` uses `%.*s`.
 - **Static libraries and globals.** Globals with constructors in different translation units initialize in an unspecified order. And the linker drops object files from a static library when nothing references them, so self-registering globals (future reflection, module registries) can silently vanish. Flag either pattern.
 - Startup and shutdown order is explicit, and shutdown mirrors startup.
@@ -217,7 +219,7 @@ Engine code runs every frame, so treat it as a budget.
 - Asserts are for programmer errors (broken invariants). Things that can happen on a player's machine (a missing file, a lost device) get a runtime check and a log line. Asserts vanish in Shipping.
 - **Side effects in `VX_ASSERT` (ERROR).** An expression that does work that must happen (a call that changes state, `++`, an assignment) belongs in `VX_VERIFY`, because `VX_ASSERT`'s expression never runs in Shipping (CLAUDE.md § Asserts). Tests that do it on purpose, to prove exactly that, are the exception.
 - The right macro for the job: `VX_CHECK` only where the code handles the `false` case and carries on; `VX_ASSERT` where carrying on would be undefined behavior.
-- Nothing on the assert failure path (`Core/Debug/Assert.*`) is `noexcept`.
+- `noexcept` goes on move constructors and move assignments, and on nothing that can fail an assert (CLAUDE.md § Code style). Nothing on the assert failure path (`Core/Debug/Assert.*`) is `noexcept`: a test handler throws through it.
 - A result a caller must not ignore is `[[nodiscard]]`.
 
 ### Build configurations (Debug / Development / Shipping)
