@@ -38,7 +38,7 @@ This file says what Vertex builds, in what order, and where each feature stands.
 |---|---|---|---|---|
 | M1.0 | CoreTests harness on doctest (chore) | Done | | #15 |
 | M1.1 | Asserts and Logging v2 | Done | [m1-asserts](m1-asserts.md) | #17 |
-| M1.7 | Integer type aliases | Todo | | |
+| M1.7 | Numeric type aliases | Planned | [m1-numeric-types](m1-numeric-types.md) | |
 | M1.2 | Memory and `TUniquePtr` | Todo | | |
 | M1.8 | `TArrayView` | Todo | | |
 | M1.3 | `TArray` | Todo | | |
@@ -47,7 +47,7 @@ This file says what Vertex builds, in what order, and where each feature stands.
 | M1.5 | Hashing, `TSet`, and `TMap` | Todo | | |
 | M1.6 | `VName` | Todo | | |
 
-### M1.7: Integer type aliases
+### M1.7: Numeric type aliases
 
 - **UE:** `FGenericPlatformTypes` in `Runtime/Core/Public/GenericPlatform/GenericPlatform.h`. `Runtime/Core/Public/HAL/Platform.h` publishes it as the global names `int32`, `uint8`, and so on.
 - **Why now:** M1.2 and M1.8 are the first features that need integer types for sizes. Only five `std` integer uses exist to migrate: `std::uint8_t` twice and `std::size_t` three times.
