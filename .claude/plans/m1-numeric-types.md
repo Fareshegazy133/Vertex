@@ -1,6 +1,6 @@
 # M1.7: Numeric type aliases
 
-**Status:** done 2026-10-11
+**Status:** done 2026-10-11, PR #20
 **Branch:** `feature/m1-numeric-types`
 **Roadmap:** M1, Core types
 

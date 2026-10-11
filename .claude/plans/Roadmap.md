@@ -38,7 +38,7 @@ This file says what Vertex builds, in what order, and where each feature stands.
 |---|---|---|---|---|
 | M1.0 | CoreTests harness on doctest (chore) | Done | | #15 |
 | M1.1 | Asserts and Logging v2 | Done | [m1-asserts](m1-asserts.md) | #17 |
-| M1.7 | Numeric type aliases | Done | [m1-numeric-types](m1-numeric-types.md) | |
+| M1.7 | Numeric type aliases | Done | [m1-numeric-types](m1-numeric-types.md) | #20 |
 | M1.2 | Memory and `TUniquePtr` | Todo | | |
 | M1.8 | `TArrayView` | Todo | | |
 | M1.3 | `TArray` | Todo | | |
