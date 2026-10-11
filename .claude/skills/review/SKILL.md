@@ -240,7 +240,7 @@ The defects that hurt most live in the configuration nobody builds locally.
 - Patterns that need an edit per new feature (a `switch` case per key, a function per command). Propose the data-driven alternative.
 - Point to the Unreal counterpart when it helps: UE 5.7.4 source at `C:\Developer Projects\HNDREDGAMES\UE_5_7_4\Engine\Source\`. Say what problem Epic solved and whether Vertex has that problem yet. **Study, never copy:** UE code is under Epic's EULA.
 - If the better approach is out of scope, suggest it as a follow-up for a named milestone.
-- If the milestone plan is in context, flag work that jumps ahead of the current milestone. The branch name carries the milestone (`feature/m0-…`).
+- Flag work that jumps ahead of the feature in progress. `.claude/plans/Roadmap.md` holds the build order, and the feature's plan holds its scope. The branch name carries the milestone (`feature/m1-…`).
 
 ---
 
@@ -330,4 +330,5 @@ This review is step 4 of CLAUDE.md § Feature workflow.
 - While any ERROR or WARNING remains, end by asking Fares which finding he wants to start with. Don't apply fixes until he asks.
 - After his fixes, review the same scope again. Confirm each earlier finding is fixed, and check that the fixes didn't introduce new ones.
 - The final pass always builds (`--build`). Don't pass code you haven't seen compile.
-- When no ERROR or WARNING remains and the build is clean, say **"Review passed."** That's the go for step 5 (PR and merge). INFO findings stay optional. List any Fares chose to skip, so the PR body can mention them.
+- When no ERROR or WARNING remains and the build is clean, say **"Review passed."** INFO findings stay optional. List any Fares chose to skip, so the PR body can mention them.
+- Then stop. Don't commit or raise the PR: Fares runs `/ship-feature` (step 5) when he's ready.
