@@ -105,7 +105,8 @@ Check every row of the table. The scan covers type, enum, template-parameter, ma
 - Functions, members, and locals are PascalCase. Flag `camelCase` and `snake_case` in Vertex identifiers.
 - `In` appears only where a parameter would shadow a member. `Out` appears on **every** output parameter (a non-const reference or pointer the function writes).
 - Free functions live in `namespace Vertex`. Internals a header must expose go in `Vertex::Private`. Helpers used by one `.cpp` go in an anonymous namespace, not `static`.
-- Constants are `constexpr` PascalCase, never `#define`.
+- Constants are `constexpr` PascalCase, never `#define`. A constant a header shares is `inline constexpr`, inside `namespace Vertex`: without `inline`, every file gets its own copy.
+- Numeric types (CLAUDE.md § Numeric types): every integer and float uses an alias from `Core/Types/NumericTypes.h`. The scan flags built-in and `std` spellings. Drop the hits that are CLAUDE.md's exceptions: today, `printf`'s precision in `Log.cpp` and HeaderTool's `Run` exit code. Also flag an overload set that takes both `uint64` and `usize`, or both `int64` and `intptr`.
 - A file is named after its main type, without the prefix (`TArray` → `Array.h`).
 - A class template gets `T`, a plain class gets `V`. The scan can't tell which one a class is.
 - Getters (the Getters row): `Get…` always succeeds, so a `Get` that can return `nullptr`, an empty `std::optional`, or a not-found index is really a `Find`. A `bool` getter never starts with `Get` or `Find`. No `TryGet…`.
@@ -246,7 +247,7 @@ The defects that hurt most live in the configuration nobody builds locally.
 
 # Convention governance
 
-CLAUDE.md § "Decided when first needed" lists conventions that aren't settled yet: concepts, interfaces, and type aliases. When the change introduces one of these, or anything the naming table doesn't cover, or the code is inconsistent where the contract is silent (for example, `const` on by-value parameters in one function but not the next):
+CLAUDE.md § "Decided when first needed" lists conventions that aren't settled yet: concepts and interfaces. Type aliases have no naming rule by Fares' choice, so a new alias's name is never raised as an undecided convention. When the change introduces one of these, or anything the naming table doesn't cover, or the code is inconsistent where the contract is silent (for example, `const` on by-value parameters in one function but not the next):
 
 - Don't accept it silently, and don't invent a rule.
 - Propose two or three options, recommend one with the reason, and ask Fares to choose.

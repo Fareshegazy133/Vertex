@@ -2,16 +2,16 @@
 
 #include "Core/Debug/Assert.h"
 #include "Core/Logging/Log.h"
+#include "Core/Types/NumericTypes.h"
 #include "Logging/FormatToBuffer.h"
 #include <array>
 #include <atomic>
-#include <cstddef>
 #include <cstdlib>
 #include <string_view>
 
 namespace
 {
-	constexpr std::size_t MaxAssertMessageLength = 1024;
+	constexpr usize MaxAssertMessageLength = 1024;
 
 	constinit thread_local bool bReportingFailure = false;
 

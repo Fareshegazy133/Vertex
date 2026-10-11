@@ -2,14 +2,14 @@
 
 #pragma once
 
+#include "Core/Types/NumericTypes.h"
 #include <atomic>
-#include <cstdint>
 #include <format>
 #include <source_location>
 #include <string_view>
 
 /** Which assert macro failed. It names the macro in the Error line, and decides whether the program ends. */
-enum class EAssertKind : std::uint8_t
+enum class EAssertKind : uint8
 {
 	/** VX_ASSERT: a broken invariant. Ends the program; compiled out of Shipping. */
 	Assert,

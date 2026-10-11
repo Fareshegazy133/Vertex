@@ -4,12 +4,12 @@
 
 #pragma once
 
-#include <cstdint>
+#include "Core/Types/NumericTypes.h"
 #include <format>
 #include <string_view>
 
 /** How severe a log line is. It picks the line's prefix and the stream it goes to. */
-enum class ELogLevel : std::uint8_t
+enum class ELogLevel : uint8
 {
 	/** Normal operation worth recording: startup, shutdown, state changes. */
 	Info,

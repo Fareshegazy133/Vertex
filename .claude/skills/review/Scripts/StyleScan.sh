@@ -156,6 +156,7 @@ for File in "${Files[@]}"; do
 			IsRaylibBackend = (File ~ /^Source\/Runtime\/Private\/Platform\/Raylib\//)
 			IsLogBackend = (File ~ /\/Private\/Logging\//)
 			IsDescriptor = (File ~ /(\.Module\.lua|^Vertex\.lua)$/)
+			IsNumericTypes = (File ~ /(\/Core\/Types\/NumericTypes\.h|\/Types\/NumericTypesTests\.cpp)$/)
 			BlockComment = 0
 			FirstCode = ""
 			FirstInclude = ""
@@ -479,6 +480,21 @@ for File in "${Files[@]}"; do
 				if (Code ~ /(^|[^A-Za-z0-9_])default[ \t]*:/)
 				{
 					Hit("Switch: default: label (enum switches must not use one, so C4062 catches new values)", N, Raw)
+				}
+				# CLAUDE.md "Numeric types". The header that defines the aliases, and the test that
+				# compares them with the std types, are exempt. String literals are blanked first,
+				# so a log message cannot trip it. The main line is skipped; an exit code or a C API
+				# that needs exactly int (the printf precision in Log.cpp) is an expected hit.
+				if (!IsNumericTypes)
+				{
+					Probe = Code
+					gsub(/"([^"\\]|\\.)*"/, "\"\"", Probe)
+					if (Probe ~ /(^|[^A-Za-z0-9_])(short|long|unsigned|signed|float|double)([^A-Za-z0-9_]|$)/ ||
+						Probe ~ /(^|[^A-Za-z0-9_])(u?int(_least|_fast)?[0-9]+_t|u?intmax_t|size_t|u?intptr_t)([^A-Za-z0-9_]|$)/ ||
+						(Probe ~ /(^|[^A-Za-z0-9_])int([^A-Za-z0-9_]|$)/ && Probe !~ /(^|[^A-Za-z0-9_])main[ \t]*\(/))
+					{
+						Hit("Numeric types: use an alias from Core/Types/NumericTypes.h (int32, usize, float32, ...)", N, Raw)
+					}
 				}
 				if (IsPublic)
 				{

@@ -1,7 +1,7 @@
 // Copyright HNDRED GAMES. All Rights Reserved.
 
 #include "Logging/FormatToBuffer.h"
-#include <cstddef>
+#include "Core/Types/NumericTypes.h"
 #include <iterator>
 
 namespace
@@ -12,7 +12,7 @@ namespace
 		void push_back(const char Character);
 
 		std::span<char> Buffer;
-		std::size_t Size = 0;
+		usize Size = 0;
 	};
 
 	void VTruncatingWriter::push_back(const char Character)

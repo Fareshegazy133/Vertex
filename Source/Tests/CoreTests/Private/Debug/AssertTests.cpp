@@ -1,16 +1,16 @@
 // Copyright HNDRED GAMES. All Rights Reserved.
 
 #include "Core/Debug/Assert.h"
+#include "Core/Types/NumericTypes.h"
 #include "Debug/AssertRecorder.h"
 #include "doctest/doctest.h"
-#include <cstdint>
 #include <string>
 
 namespace
 {
-	constinit int NestedFailureCalls = 0;
+	constinit int32 NestedFailureCalls = 0;
 
-	bool CheckOnlyOnce(const int Value)
+	bool CheckOnlyOnce(const int32 Value)
 	{
 		return VX_CHECK(Value > 0, "Value was {}", Value);
 	}
@@ -24,18 +24,18 @@ namespace
 
 TEST_CASE("VX_ASSERT: stays silent when the expression is true")
 {
-	const int OnlyInExpression = 1;
-	const int OnlyInMessage = 2;
+	const int32 OnlyInExpression = 1;
+	const int32 OnlyInMessage = 2;
 	CHECK_NOTHROW(VX_ASSERT(OnlyInExpression == 1, "{}", OnlyInMessage));
 }
 
 TEST_CASE("VX_ASSERT: reports the expression, line, and message when it fails")
 {
-	constexpr int Index = 7;
-	constexpr int Num = 5;
+	constexpr int32 Index = 7;
+	constexpr int32 Num = 5;
 #if VERTEX_ENABLE_ASSERTS
 	bool bFired = false;
-	std::uint_least32_t ExpectedLine = 0;
+	uint32 ExpectedLine = 0;
 	try
 	{
 		ExpectedLine = __LINE__ + 1;
@@ -57,21 +57,21 @@ TEST_CASE("VX_ASSERT: reports the expression, line, and message when it fails")
 
 TEST_CASE("VX_ASSERT: never evaluates its expression in Shipping")
 {
-	int Evaluations = 0;
+	int32 Evaluations = 0;
 	VX_ASSERT(++Evaluations > 0);
 	CHECK(Evaluations == (VERTEX_ENABLE_ASSERTS ? 1 : 0));
 }
 
 TEST_CASE("VX_VERIFY: evaluates its expression in every configuration")
 {
-	int Evaluations = 0;
+	int32 Evaluations = 0;
 	VX_VERIFY(++Evaluations > 0);
 	CHECK(Evaluations == 1);
 }
 
 TEST_CASE("VX_VERIFY: fails like VX_ASSERT outside Shipping")
 {
-	constexpr int Value = 0;
+	constexpr int32 Value = 0;
 #if VERTEX_ENABLE_ASSERTS
 	bool bFired = false;
 	try
@@ -93,7 +93,7 @@ TEST_CASE("VX_VERIFY: fails like VX_ASSERT outside Shipping")
 
 TEST_CASE("VX_VERIFY: reports its message")
 {
-	constexpr int Value = 0;
+	constexpr int32 Value = 0;
 #if VERTEX_ENABLE_ASSERTS
 	bool bFired = false;
 	try
