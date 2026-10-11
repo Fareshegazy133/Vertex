@@ -53,5 +53,7 @@ doctest (ThirdParty) ←private── CoreTests ──private──→ Core
 | `ThirdParty/<Name>/` | Third-party descriptors; fetched sources land in `Source/` (not committed) |
 | `Scripts/` | `Setup.bat`, `Clean.bat` |
 | `Binaries/`, `Intermediate/` | Build output (not committed) |
+| `.claude/plans/` | `Roadmap.md` (milestones, features, and their status), and each feature's plan |
+| `.claude/skills/` | The Claude Code skills that run the feature workflow and the code review |
 
 See `CLAUDE.md` for the architecture rules this layout enforces.
