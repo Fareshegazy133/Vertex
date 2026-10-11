@@ -1,10 +1,11 @@
 // Copyright HNDRED GAMES. All Rights Reserved.
 
+#include "Core/Types/NumericTypes.h"
 #include "doctest/doctest.h"
 
 TEST_CASE("Build configuration: exactly one configuration define is set")
 {
-	int ConfigurationDefines = 0;
+	int32 ConfigurationDefines = 0;
 #if defined(VERTEX_DEBUG)
 	++ConfigurationDefines;
 #endif

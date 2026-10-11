@@ -111,6 +111,7 @@ Each module's unit tests build into their own console application at `Source/Tes
 - **`CHECK` by default; `REQUIRE` only when the rest of the test can't run after a failure**, such as before dereferencing a pointer the test just checked. A failed `CHECK` is recorded and the test carries on, so one run reports every broken expectation.
 - doctest's macros (`TEST_CASE`, `CHECK`, `REQUIRE`) keep their upstream names. The `VX_` prefix rule covers Vertex's own macros, and doctest's only exist inside test applications.
 - A test file is a `.cpp`, so it carries no comments besides the copyright line. The test case name says what it proves.
+- **A fact the compiler knows is proven with `static_assert`**, at namespace scope in the test file: a type's size, a trait, a `constexpr` value (agreed in M1.7, 2026-10-11). It's proven when the test application compiles, in every configuration, so it adds no test case: a run-time `CHECK` would only repeat what the compiler already checked. `Private/Types/NumericTypesTests.cpp` holds only these.
 - Tests build and pass in all three configurations. Shipping matters most: it's the code that ships, and the only configuration with asserts compiled out.
 
 ## Asserts
@@ -151,7 +152,8 @@ Each module's unit tests build into their own console application at `Source/Tes
 | Parameters | `In` only when the name would match a member; `Out` always on output parameters | `SetDesc(const VWindowDesc& InDesc)`, `bool& OutSucceeded` |
 | Free functions | Inside `namespace Vertex`; internals that a header must expose go inside `Vertex::Private`; helpers used by one `.cpp` only go in an anonymous namespace | `Vertex::InitializeEngine()` |
 | Getters | `Get…` always succeeds: it returns a value or a reference, and asserts if it can't. `Find…` may come back empty: `nullptr`, an empty `std::optional`, or a not-found index. A `bool` getter asks a question and never starts with `Get` or `Find`. No `TryGet…`: a lookup that can fail is a `Find`. | `GetMode()`, `FindChild(Name)`, `IsVisible()` |
-| Constants | `constexpr`, PascalCase, never `#define` | `MaxLogLineLength` |
+| Constants | `constexpr`, PascalCase, never `#define`. A constant a header shares is `inline constexpr`, inside `namespace Vertex` (agreed in M1.7, 2026-10-10). The Global variables row is about mutable state. | `MaxLogLineLength`, `Vertex::MaxInt32` |
+| Numeric types (agreed in M1.7, 2026-10-10) | The global aliases in `Core/Types/NumericTypes.h`: `int8`…`int64`, `uint8`…`uint64`, `intptr`, `uintptr`, `usize`, `float32`, `float64`. Lowercase, no prefix, no namespace. Their limits are `Vertex::Min…`/`Vertex::Max…`. See § Numeric types for when to use them. | `int32 Count`, `usize Size`, `Vertex::MaxUInt64` |
 | Global variables (agreed in M1, 2026-10-08) | File-local only: in a `.cpp`'s anonymous namespace, PascalCase, no prefix. `constinit` when the initializer is a constant. Other files reach one through functions, never `extern`. | `AssertHandler`, changed through `SetAssertHandler()` |
 | Macros | `VX_` prefix, UPPER_SNAKE. `VERTEX_*` and `<MODULE>_API` come from the build. | `VX_ASSERT`, `VX_CLASS` |
 | Names the language or the standard library requires (agreed in M1, 2026-10-10) | Keep the required spelling. Everything else follows the rows above. | `value_type`, `push_back()`, `begin()`/`end()` |
@@ -166,6 +168,29 @@ Why:
 - A method parameter with the same name as a member hides it ("shadowing"), which is warning C4458. At `/W4` with warnings as errors, that fails the build. Hence the `In` rule.
 - The `Find`/`Get` split tells a caller from the name alone whether the result needs a null check. UE's containers follow it: `TLruCache::Find` returns `nullptr` for a missing key, while `FindChecked` asserts.
 - A backend `.cpp` repeats its folder's name so that basenames stay unique. MSBuild compiles every file in a project into one object folder, so a `Raylib/PlatformInit.cpp` and a `Null/PlatformInit.cpp` would both produce `PlatformInit.obj`. UE does the same with `Windows/WindowsPlatformMisc.cpp`.
+- A `constexpr` variable at namespace scope is also `const`, which gives every file that includes its header a private copy. When an inline function binds a reference to one (`std::format` takes its arguments by reference), each file's copy of that function points at a different object, which breaks the one-definition rule without a diagnostic. `inline` makes it one object for the whole program.
+
+### Numeric types (agreed in M1.7, 2026-10-10)
+
+Every integer and float Vertex declares uses an alias from `Core/Types/NumericTypes.h`, never `int`, `short`, `long`, `unsigned`, `signed`, `float`, `double`, `std::size_t`, `std::uint8_t`, or another `std` spelling. The file that uses one includes the header itself. StyleScan flags the rest.
+
+The exceptions are where something outside Vertex requires exactly that type:
+- `main`, and the exit code it returns, are `int`.
+- A C API's `int` parameter stays `int`, such as `printf`'s `%.*s` precision in `Log.cpp`.
+- `char` holds text, not a number. Character types are decided in M1.9.
+- A `std` type with no alias, such as `std::ptrdiff_t`, keeps its `std` name.
+
+Traps:
+- **Never overload on both `uint64` and `usize`, or both `int64` and `intptr`.** They're the same type on Windows, so the second overload is a redefinition there, and they're different types on macOS.
+- **`int32 < usize` compiles at `/W4` without a warning.** The `int32` is converted to unsigned, so a negative value compares as a huge one.
+- **`float32` is `float`, not C++23's `std::float32_t`.** That one is a distinct type, so repointing the alias would change every overload and raylib call that takes `float`. CoreTests pins `float32` to `float` and `float64` to `double`.
+
+Why:
+- One vocabulary, with the width visible wherever data may later be saved to disk or sent over the network.
+- The integer aliases name the `std` types, not built-ins, so the standard guarantees each width, and `int64` is the same type the platform's libraries use. On Linux, `std::int64_t` is `long`, not `long long`. UE's aliases point at built-ins because they're older than `<cstdint>`.
+- An alias is the same type under a second name, not a new type. Passing `float32` to raylib's `float`, or storing `.size()` in a `usize`, needs no conversion.
+- They're global and lowercase, like the built-in types they stand for, because they appear on nearly every line. A library that declares the same name as a different type fails loudly with C2371.
+- The limits come from `<cstdint>`'s `INT32_MAX` family, not `std::numeric_limits<…>::max()`: `<windows.h>` defines `max` as a macro, which breaks that call in any header included after it.
 
 ### File layout
 
@@ -258,7 +283,7 @@ class RUNTIME_API VWindow
 {
 public:
 	/** How the window occupies the screen. */
-	enum class EMode : std::uint8_t
+	enum class EMode : uint8
 	{
 		/** A movable, resizable window with OS decorations. */
 		Windowed,
@@ -360,7 +385,7 @@ Never commented: namespaces, type aliases, macros, concepts, local variables, an
 
 #### Content
 
-A comment says **why**: intent, units, valid range, who writes it, the trap a later edit could fall into. It adds what the declaration can't say and never restates the code. `/** The width. */` above `int Width;` adds nothing. `/** Client width in pixels. Only the backend writes it, on resize. */` does.
+A comment says **why**: intent, units, valid range, who writes it, the trap a later edit could fall into. It adds what the declaration can't say and never restates the code. `/** The width. */` above `int32 Width;` adds nothing. `/** Client width in pixels. Only the backend writes it, on resize. */` does.
 
 #### Functions
 
@@ -427,7 +452,7 @@ The enum's comment says what it's used for. Each value's comment says what that 
 
 ```cpp
 /** How severe a log line is. It picks the line's prefix and the stream it goes to. */
-enum class ELogLevel : std::uint8_t
+enum class ELogLevel : uint8
 {
 	/** Normal operation worth recording: startup, shutdown, state changes. */
 	Info,
@@ -472,7 +497,9 @@ Why:
 
 ### Decided when first needed
 
-Concepts, interfaces, type aliases, and the order of member variables within an access section. Type aliases come up first, in M1's core types: a size alias named `TSize` would read like a class template under these rules.
+Concepts, interfaces, and the order of member variables within an access section.
+
+Type aliases have no naming rule (Fares, 2026-10-10). Each one is named when it's written, until Fares asks for a rule. The numeric aliases are the exception: they have their own row in § C++ naming.
 
 ## Feature workflow
 

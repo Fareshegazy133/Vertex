@@ -1,6 +1,7 @@
 // Copyright HNDRED GAMES. All Rights Reserved.
 
 #include "Core/Logging/Log.h"
+#include "Core/Types/NumericTypes.h"
 #include <cstdlib>
 #include <span>
 
@@ -21,7 +22,7 @@ namespace
 
 int main(const int ArgC, char** const ArgV)
 {
-	const std::span<const char* const> AllArguments(ArgV, static_cast<std::size_t>(ArgC));
+	const std::span<const char* const> AllArguments(ArgV, static_cast<usize>(ArgC));
 	const std::span<const char* const> Arguments = AllArguments.empty() ? AllArguments : AllArguments.subspan(1);
 	return Run(Arguments);
 }

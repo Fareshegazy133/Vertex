@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Core/Debug/Assert.h"
-#include <cstdint>
+#include "Core/Types/NumericTypes.h"
 #include <string>
 #include <vector>
 
@@ -27,7 +27,7 @@ struct VRecordedAssert
 	std::string Expression;
 
 	/** The line the macro was written on. Tests compare it with __LINE__. */
-	std::uint_least32_t Line = 0;
+	uint32 Line = 0;
 };
 
 namespace Vertex

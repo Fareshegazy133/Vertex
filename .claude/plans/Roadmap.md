@@ -38,7 +38,7 @@ This file says what Vertex builds, in what order, and where each feature stands.
 |---|---|---|---|---|
 | M1.0 | CoreTests harness on doctest (chore) | Done | | #15 |
 | M1.1 | Asserts and Logging v2 | Done | [m1-asserts](m1-asserts.md) | #17 |
-| M1.7 | Integer type aliases | Todo | | |
+| M1.7 | Numeric type aliases | Done | [m1-numeric-types](m1-numeric-types.md) | #20 |
 | M1.2 | Memory and `TUniquePtr` | Todo | | |
 | M1.8 | `TArrayView` | Todo | | |
 | M1.3 | `TArray` | Todo | | |
@@ -47,17 +47,11 @@ This file says what Vertex builds, in what order, and where each feature stands.
 | M1.5 | Hashing, `TSet`, and `TMap` | Todo | | |
 | M1.6 | `VName` | Todo | | |
 
-### M1.7: Integer type aliases
+### M1.7: Numeric type aliases
 
+- **Planned and decided:** see [m1-numeric-types](m1-numeric-types.md). It gives Core 13 global aliases (`int8`…`uint64`, `intptr`, `uintptr`, `usize`, `float32`, `float64`) and 16 limits in `namespace Vertex`, and CLAUDE.md § Numeric types makes them the only way Vertex spells a number.
 - **UE:** `FGenericPlatformTypes` in `Runtime/Core/Public/GenericPlatform/GenericPlatform.h`. `Runtime/Core/Public/HAL/Platform.h` publishes it as the global names `int32`, `uint8`, and so on.
-- **Why now:** M1.2 and M1.8 are the first features that need integer types for sizes. Only five `std` integer uses exist to migrate: `std::uint8_t` twice and `std::size_t` three times.
-- In C++20, `std::int32_t` is already exactly 32 bits everywhere. The alias buys a shorter name that Vertex owns, not portability. UE's aliases date from compilers that lacked `<cstdint>`.
 - **Not `String`:** `VString` is M1.4. An alias of `std::string` would spread std's API (`size()`, `c_str()`) that `VString` would then have to copy or break.
-- **Forks to decide:**
-  1. **The type-alias naming rule** (CLAUDE.md § Decided when first needed): `int32` as UE spells it, `Int32`, or another form. Moved here from M1.2.
-  2. **Which aliases.** `int8`–`int64` and `uint8`–`uint64`. Open: a pointer-sized integer. Floats stay `float` and `double`: they're already 32 and 64 bits on every target. Character types wait for M1.9.
-  3. **Global, or inside `namespace Vertex`.** Vertex types are global and prefixed against name clashes. An integer alias may get neither.
-  4. **Where the header lives** (UE: `CoreTypes.h`), and whether `static_assert` in the header or tests prove the sizes.
 
 ### M1.2: Memory and `TUniquePtr`
 
@@ -67,7 +61,7 @@ This file says what Vertex builds, in what order, and where each feature stands.
   1. **What "Memory" covers.** Recommendation: only `TUniquePtr` and `MakeUnique` for now. Allocator and `Malloc` wrappers wait for a trigger, such as memory tracking or a custom allocator for `TArray`.
   2. **The shape of `TUniquePtr`.** It's move-only. Open: moving a derived pointer into a base one, an array form (`TUniquePtr<T[]>`), and custom deleters (UE's deleter template parameter).
   3. **A naming clash.** CLAUDE.md's Getters row says `Get…` always succeeds and `Find…` may come back empty. But `Get()` on `std::unique_ptr` and on UE's `TUniquePtr` returns `nullptr` when empty. Options: `Get` asserts non-null and a `Find`-style accessor returns the maybe-null pointer, or the row gets an exception.
-  4. **Type-alias naming** is decided in M1.7, which comes first. `TUniquePtr`'s element type is the first member alias that uses the rule.
+  4. **Type-alias naming: no rule** (Fares, 2026-10-10, in M1.7). `TUniquePtr`'s element type gets its name on its card, with no fork.
   5. **Asserts on misuse.** `VX_ASSERT` on a null dereference in `operator*` and `operator->`.
   6. **Where the header lives:** `Core/Templates/UniquePtr.h` (UE's folder) or `Core/Memory/UniquePtr.h`. The tests mirror it.
 - **Tooling, Claude:** `TUniquePtr` is the first real class, which is the trigger for StyleScan's function-order check (see Tooling ideas).
@@ -80,9 +74,11 @@ This file says what Vertex builds, in what order, and where each feature stands.
 - **Why not `std::span`:** Vertex's size type, bounds checks through `VX_ASSERT` (`std::span`'s `[]` checks nothing), and Vertex's naming.
 - **Forks to decide:**
   1. **The index and size type policy.** Moved here from M1.3. The old code mixed an `int8` `INDEX_NONE` with an unsigned size.
-  2. **The size alias's name.** Moved here from M1.3. Not `TSize`: it would read like a class template.
+  2. **The size alias's name: settled in M1.7** as `usize` (`std::size_t`). Fork 1 still decides which type containers use for sizes and indices.
   3. **Read-only views:** `TArrayView<const T>`, as UE and `std::span` do it, or a separate type.
 - **Trap to document:** a view dangles when its source grows or is destroyed. Its `@lifetime` says so.
+- **Trap found in M1.7:** `int32 < usize` compiles at `/W4` without a warning, and a negative `int32` compares as a huge unsigned value. The index policy (fork 1) decides how containers avoid it.
+- **Deferred from M1.7:** limits for `usize`, `intptr`, and `uintptr` (`Vertex::Max…`), which change size from platform to platform. Add them if the size policy needs one.
 
 ### M1.3: `TArray`
 
@@ -212,12 +208,14 @@ Each item waits for its trigger. When one fires, `/roadmap` gives it an ID in th
 | Item | Trigger |
 |---|---|
 | **Logging v3:** categories, a `VX_LOG(Category, Level, Format, …)` macro, arguments skipped when a category is filtered out, and stripping from Shipping. Sinks also make Log's output unit-testable. UE: `Runtime/Core/Public/Logging/LogMacros.h`. | Several systems need separate filtering |
-| **Math:** vectors and the like | The window or render work first needs it |
+| **Math:** vectors and the like, plus float constants such as epsilon and infinity (deferred from M1.7; `std::numeric_limits` covers them until then) | The window or render work first needs it |
 | **A call stack in the assert Error line** | The first assert that's hard to trace from its file and line |
 | **`VX_CHECK_ALWAYS`**, which reports every failure, not only the first | The first real need |
 | **Per-module precompiled headers.** `<format>` costs about 0.3 s per file that includes `Log.h` or `Assert.h`. | Core's headers spread, or measured build-time pain |
 | **A standalone `Game` launcher.** Runtime never depends on Editor. | A game needs to ship without the editor |
 | **Promoting a Runtime folder to a module** | One of the triggers in CLAUDE.md § Runtime layering |
+| **`NOMINMAX` for Vertex modules,** so `<windows.h>` stops defining the `min` and `max` macros (deferred from M1.7). Build setup, so Claude writes it. | The first Vertex file that includes `<windows.h>` |
+| **A naming rule for type aliases.** Fares chose none in M1.7: each alias is named when it's written. | Fares asks for one |
 | **A Linux target** | Not set |
 
 ## Tooling ideas

@@ -1,14 +1,14 @@
 // Copyright HNDRED GAMES. All Rights Reserved.
 
 #include "Core/Logging/Log.h"
+#include "Core/Types/NumericTypes.h"
 #include "Logging/FormatToBuffer.h"
 #include <array>
-#include <cstddef>
 #include <cstdio>
 
 namespace
 {
-	constexpr std::size_t MaxLogLineLength = 1024;
+	constexpr usize MaxLogLineLength = 1024;
 
 	const char* LogLevelToString(const ELogLevel LogLevel)
 	{
