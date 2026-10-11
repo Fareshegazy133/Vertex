@@ -1,6 +1,6 @@
 # M1.2: Memory and `TUniquePtr`
 
-**Status:** done 2026-10-11
+**Status:** done 2026-10-11, PR #21
 **Branch:** `feature/m1-unique-ptr`
 **Roadmap:** M1, Core types
 
