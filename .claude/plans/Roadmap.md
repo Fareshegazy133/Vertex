@@ -40,7 +40,7 @@ This file says what Vertex builds, in what order, and where each feature stands.
 | M1.1 | Asserts and Logging v2 | Done | [m1-asserts](m1-asserts.md) | #17 |
 | M1.7 | Numeric type aliases | Done | [m1-numeric-types](m1-numeric-types.md) | #20 |
 | M1.2 | Memory and `TUniquePtr` | Done | [m1-unique-ptr](m1-unique-ptr.md) | #21 |
-| M1.8 | `TArrayView` | Todo | | |
+| M1.8 | `TArrayView` | Planned | [m1-array-view](m1-array-view.md) | |
 | M1.3 | `TArray` | Todo | | |
 | M1.9 | `VStringView` | Todo | | |
 | M1.4 | `VString` | Todo | | |
