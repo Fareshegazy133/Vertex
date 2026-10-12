@@ -40,7 +40,7 @@ This file says what Vertex builds, in what order, and where each feature stands.
 | M1.1 | Asserts and Logging v2 | Done | [m1-asserts](m1-asserts.md) | #17 |
 | M1.7 | Numeric type aliases | Done | [m1-numeric-types](m1-numeric-types.md) | #20 |
 | M1.2 | Memory and `TUniquePtr` | Done | [m1-unique-ptr](m1-unique-ptr.md) | #21 |
-| M1.8 | `TArrayView` | Todo | | |
+| M1.8 | `TArrayView` | Done | [m1-array-view](m1-array-view.md) | #22 |
 | M1.3 | `TArray` | Todo | | |
 | M1.9 | `VStringView` | Todo | | |
 | M1.4 | `VString` | Todo | | |
@@ -62,23 +62,18 @@ This file says what Vertex builds, in what order, and where each feature stands.
 
 ### M1.8: `TArrayView`
 
+- **Planned and decided:** see [m1-array-view](m1-array-view.md). `Core/Containers/ArrayView.h` holds `TArrayView`, a view of a pointer and an `int32` count. It's 16 bytes and trivially copyable, so it's passed by value. `TConstArrayView` is the read-only form, and `Vertex::MakeArrayView` deduces the element type. Implicit constructors take a pointer and a count, a C array, another view, or any container with `data()` and `size()`. Every way in rejects a base view over derived elements, and `Slice`'s range check can't overflow.
+- **Conventions it set (CLAUDE.md):** `int32` sizes and indices, with `Vertex::IndexNone` in `NumericTypes.h`; a read-only view is written `TConstArrayView<T>`; a container's `GetData()` joins the Getters exception; containers pair `Begin()`/`End()` with `begin()`/`end()`; value template parameters are PascalCase; an `if` skips its braces only for a one-line `return`; and an `if`, `for`, `while`, or `switch` has a blank line before and after it.
 - **UE:** `Runtime/Core/Public/Containers/ArrayView.h`.
-- A non-owning view of contiguous elements: a pointer and a count. A function that only reads takes one, so a caller can pass a `TArray`, a C array, or part of either.
-- It comes before `TArray`, whose API takes and returns views. The owner knows the view; the view never knows the owner. UE's `ArrayView.h` includes `Array.h`, the other direction.
-- **Why not `std::span`:** Vertex's size type, bounds checks through `VX_ASSERT` (`std::span`'s `[]` checks nothing), and Vertex's naming.
-- **Forks to decide:**
-  1. **The index and size type policy.** Moved here from M1.3. The old code mixed an `int8` `INDEX_NONE` with an unsigned size.
-  2. **The size alias's name: settled in M1.7** as `usize` (`std::size_t`). Fork 1 still decides which type containers use for sizes and indices.
-  3. **Read-only views:** `TArrayView<const T>`, as UE and `std::span` do it, or a separate type.
-- **Trap to document:** a view dangles when its source grows or is destroyed. Its `@lifetime` says so.
-- **Trap found in M1.7:** `int32 < usize` compiles at `/W4` without a warning, and a negative `int32` compares as a huge unsigned value. The index policy (fork 1) decides how containers avoid it.
-- **Deferred from M1.7:** limits for `usize`, `intptr`, and `uintptr` (`Vertex::Max…`), which change size from platform to platform. Add them if the size policy needs one.
+- **Tooling, Claude:** StyleScan flags `TArrayView<const`, a braceless `if` that doesn't return, and a control statement without its blank lines.
 
 ### M1.3: `TArray`
 
 - **UE:** `Runtime/Core/Public/Containers/Array.h`.
 - Growth policy, move semantics, iterators, and bounds checks through the asserts.
 - Uses M1.8's size type. It converts to a `TArrayView` and accepts one: construction and `Append`, for example.
+- **Decided in M1.8 ([m1-array-view](m1-array-view.md)):** sizes and indices are `int32`, and `Find` returns `Vertex::IndexNone`. `Array.h` adds `TArray`'s implicit conversion to a view (writable and `TConstArrayView`) and its own `Vertex::MakeArrayView` overload, so `ArrayView.h` never names `TArray`. `TArray` offers `Begin()`/`End()` beside `begin()`/`end()`, and `GetData()` may return `nullptr` when it's empty (CLAUDE.md § C++ naming).
+- **From M1.8:** constructing from a raw pointer needs the view's stride guard (`std::is_convertible_v<TOther(*)[], TElement(*)[]>`), so a `TArray<VBase>` never takes `VDerived` elements. That's the guard's third use, which may raise the concept-naming fork (CLAUDE.md § Decided when first needed). A range check adds no two `int32`s (CLAUDE.md § Numeric types, Traps).
 - **Fork found in M1.2: how it grows.** Move each element into the new storage, which needs `noexcept` moves (`TUniquePtr` has them), or copy the raw bytes, as UE's `TArray` does, which needs element types that survive being moved bitwise. A `TArray<TUniquePtr<…>>` test proves whichever path is chosen.
 - **Deferred from M1.2:** `Malloc`/`Realloc`/`Free` wrappers, like UE's `FMemory`. `TArray`'s uninitialized storage is their first real caller, so planning decides here whether it needs them.
 
@@ -92,6 +87,7 @@ This file says what Vertex builds, in what order, and where each feature stands.
   2. **Built on `TArrayView`, or standalone.**
   3. **Replacing `std::string_view` in `Log.h` and `Assert.h`:** now or later. `std::format` needs a formatter for `VStringView` either way.
 - **Trap to document:** a view isn't null-terminated, so passing it to a C API such as raylib's needs a copy.
+- **Deferred from M1.8:** `Left`, `Right`, and `Mid`, which clamp instead of asserting, like UE's (`Containers/ArrayView.h:433`). `TArrayView` has only `Slice`, which asserts. Add them here if `VStringView` is built on `TArrayView` (fork 2), or for the first caller that wants them.
 
 ### M1.4: `VString`
 
@@ -213,8 +209,14 @@ Each item waits for its trigger. When one fires, `/roadmap` gives it an ID in th
 | **Replacing the global `operator new` and `operator delete`,** so every allocation, `MakeUnique`'s included, can be tracked. UE does it with `REPLACEMENT_OPERATOR_NEW_AND_DELETE` (deferred from M1.2). | The first memory budget or leak hunt |
 | **An array form, `TUniquePtr<T[]>`** (deferred from M1.2). `TUniquePtr` rejects array types today. | A heap buffer that `TArray` can't serve |
 | **Custom deleters for `TUniquePtr`** (deferred from M1.2). On MSVC, an empty deleter needs `[[msvc::no_unique_address]]` or a private base to take no space: the standard `[[no_unique_address]]` is ignored. | The first object that isn't freed with `delete`, such as one from a pool or a C library |
-| **A named concept for `TUniquePtr`'s guard,** which is written out four times today. Naming the first concept is a convention fork (CLAUDE.md § Decided when first needed). | A third use of the constraint |
+| **Named concepts for the constraints written out by hand:** `TUniquePtr`'s guard (four times), and `TArrayView`'s stride guard (three times) and container check (twice, from M1.8). Naming the first concept is a convention fork (CLAUDE.md § Decided when first needed). | A third use of one constraint: `TArray` (M1.3) reusing the stride guard is one |
 | **An `ElementType` alias on `TUniquePtr`** (deferred from M1.2) | The first generic code that reads a pointer's element type |
+| **A 64-bit view, like UE's `TArrayView64`** (deferred from M1.8). `TArrayView` counts with `int32`, so it stops at about 2.1 billion elements. | A byte buffer over 2 GB |
+| **`operator==` on `TArrayView` that compares elements** (deferred from M1.8). `std::span` leaves it out, because "equal" could mean the same memory or the same elements. | The first caller that compares two lists |
+| **A `MakeArrayView` overload for `std::initializer_list`** (deferred from M1.8). Left out because the list's elements die at the end of the statement, so a stored view dangles at once. | The first API that wants a braced list |
+| **`constexpr` on `TArrayView`** (deferred from M1.8) | The first view built at compile time, such as a lookup table |
+| **Reverse iteration and sorting** on views and containers, like UE's `rbegin` and `Sort` (deferred from M1.8) | The first caller that needs them |
+| **Limits for `usize`, `intptr`, and `uintptr`** (deferred from M1.7). M1.8's `int32` policy didn't need one. | The first code that needs one |
 | **A standalone `Game` launcher.** Runtime never depends on Editor. | A game needs to ship without the editor |
 | **Promoting a Runtime folder to a module** | One of the triggers in CLAUDE.md § Runtime layering |
 | **`NOMINMAX` for Vertex modules,** so `<windows.h>` stops defining the `min` and `max` macros (deferred from M1.7). Build setup, so Claude writes it. | The first Vertex file that includes `<windows.h>` |

@@ -44,3 +44,5 @@ static_assert(Vertex::MaxUInt8 == std::numeric_limits<uint8>::max());
 static_assert(Vertex::MaxUInt16 == std::numeric_limits<uint16>::max());
 static_assert(Vertex::MaxUInt32 == std::numeric_limits<uint32>::max());
 static_assert(Vertex::MaxUInt64 == std::numeric_limits<uint64>::max());
+static_assert(std::is_same_v<decltype(Vertex::IndexNone), const int32>);
+static_assert(Vertex::IndexNone == -1);

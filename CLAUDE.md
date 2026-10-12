@@ -136,10 +136,13 @@ Each module's unit tests build into their own console application at `Source/Tes
 ## Code style
 
 - Allman braces (the opening brace on its own line) everywhere, including Lua tables. Indent with tabs (enforced by `.editorconfig`). Files are UTF-8 without BOM.
+- An `if` skips its braces only when its one statement is a `return` and the whole `if` fits on one line: `if (Data[Index] == Value) return Index;`. Every other `if`, `for`, `while`, and `switch` body gets Allman braces (Fares, agreed in M1.8, 2026-10-11). An early return reads as one unit; anything that does work gets a block, so a second statement can't land outside it by accident.
+- An `if`, `for`, `while`, or `switch` has a blank line before it and after it, except where it opens or closes a block: the first statement of a function, or of any other block, needs none above it, and the last needs none below it (Fares, agreed in M1.8, 2026-10-11). An `if` with its `else` branches counts as one statement, and so does a `do` … `while`. The blank lines show where one step of a function ends and the next begins. StyleScan checks both rules.
 - By-value parameters are `const` in the declaration and the definition alike, so the two signatures stay identical: `void WriteLog(const ELogLevel LogLevel, const std::string_view Format, const std::format_args Arguments);`. The compiler ignores that `const` in a declaration. In the definition, it stops the body from reassigning a parameter by accident.
 - A template head is written with a space: `template <typename TElement>` (Fares, agreed in M1.2, 2026-10-11). A constraint may follow on the same line: `template <typename TElement> requires (!std::is_array_v<TElement>)`. StyleScan flags `template<`.
 - `noexcept` goes on move constructors and move assignments, and on nothing that can fail an assert (agreed in M1.2, 2026-10-11). Containers check a move's `noexcept` to decide between moving and copying as they grow. A test's assert handler throws through a failed assert, and `noexcept` would turn that throw into `std::terminate` (see Asserts).
 - A heap object is owned by a `TUniquePtr` and created with `Vertex::MakeUnique` (`Core/Memory/UniquePtr.h`), never with `std::unique_ptr`, `std::make_unique`, or a `new` whose result isn't handed straight to an owner (agreed in M1.2, 2026-10-11). StyleScan flags the `std` names.
+- A function that only reads or edits a list takes a `TArrayView` (`Core/Containers/ArrayView.h`) by value, so its caller can pass a C array, a std container, or (from M1.3) a `TArray`. A read-only view is written `TConstArrayView<T>`, never `TArrayView<const T>` (agreed in M1.8, 2026-10-11). A view is 16 bytes and trivially copyable, so passing it costs about what a reference does. StyleScan flags `TArrayView<const` outside `ArrayView.h`.
 
 ### C++ naming (agreed in M0 step 7)
 
@@ -148,18 +151,19 @@ Each module's unit tests build into their own console application at `Source/Tes
 | Classes and structs | `V` + PascalCase | `VWindow`, `VWindowDesc` |
 | Class templates | `T` + PascalCase | `TArray`, `TSet` |
 | Template type parameters | `T` + PascalCase | `TElement`, `TArgs` |
+| Value template parameters (agreed in M1.8, 2026-10-11) | PascalCase, no prefix, like a constant | `template <int32 ArrayNum>` |
 | Enums | `enum class`, `E` + PascalCase; values in PascalCase | `ELogLevel::Warning` |
 | Functions, members, locals | PascalCase, no `m_` | `RunApplication()`, `LayerStack` |
 | Bools (members and locals) | `b` prefix | `bIsRunning` |
 | Bool parameters | No `b` | `SetVSync(bool VSync)` |
 | Parameters | `In` only when the name would match a member; `Out` always on output parameters | `SetDesc(const VWindowDesc& InDesc)`, `bool& OutSucceeded` |
 | Free functions | Inside `namespace Vertex`; internals that a header must expose go inside `Vertex::Private`; helpers used by one `.cpp` only go in an anonymous namespace | `Vertex::InitializeEngine()` |
-| Getters | `Get…` always succeeds: it returns a value or a reference, and asserts if it can't. `Find…` may come back empty: `nullptr`, an empty `std::optional`, or a not-found index. A `bool` getter asks a question and never starts with `Get` or `Find`. No `TryGet…`: a lookup that can fail is a `Find`. A pointer type's `Get()` is the one exception: it returns the raw pointer, or `nullptr` when empty (agreed in M1.2, 2026-10-11). | `GetMode()`, `FindChild(Name)`, `IsVisible()`, `Owner.Get()` |
+| Getters | `Get…` always succeeds: it returns a value or a reference, and asserts if it can't. `Find…` may come back empty: `nullptr`, an empty `std::optional`, or a not-found index. A `bool` getter asks a question and never starts with `Get` or `Find`. No `TryGet…`: a lookup that can fail is a `Find`. Two getters are the exceptions: a pointer type's `Get()` returns the raw pointer, or `nullptr` when empty (agreed in M1.2, 2026-10-11), and a container's or view's `GetData()` returns its elements' address, which may be `nullptr` when it holds none (agreed in M1.8, 2026-10-11). Every other getter on those types follows the rule. | `GetMode()`, `FindChild(Name)`, `IsVisible()`, `Owner.Get()`, `View.GetData()` |
 | Constants | `constexpr`, PascalCase, never `#define`. A constant a header shares is `inline constexpr`, inside `namespace Vertex` (agreed in M1.7, 2026-10-10). The Global variables row is about mutable state. | `MaxLogLineLength`, `Vertex::MaxInt32` |
-| Numeric types (agreed in M1.7, 2026-10-10) | The global aliases in `Core/Types/NumericTypes.h`: `int8`…`int64`, `uint8`…`uint64`, `intptr`, `uintptr`, `usize`, `float32`, `float64`. Lowercase, no prefix, no namespace. Their limits are `Vertex::Min…`/`Vertex::Max…`. See § Numeric types for when to use them. | `int32 Count`, `usize Size`, `Vertex::MaxUInt64` |
+| Numeric types (agreed in M1.7, 2026-10-10) | The global aliases in `Core/Types/NumericTypes.h`: `int8`…`int64`, `uint8`…`uint64`, `intptr`, `uintptr`, `usize`, `float32`, `float64`. Lowercase, no prefix, no namespace. Their limits are `Vertex::Min…`/`Vertex::Max…`, and `Vertex::IndexNone` means "no index". See § Numeric types for when to use them. | `int32 Count`, `usize Size`, `Vertex::MaxUInt64` |
 | Global variables (agreed in M1, 2026-10-08) | File-local only: in a `.cpp`'s anonymous namespace, PascalCase, no prefix. `constinit` when the initializer is a constant. Other files reach one through functions, never `extern`. | `AssertHandler`, changed through `SetAssertHandler()` |
 | Macros | `VX_` prefix, UPPER_SNAKE. `VERTEX_*` and `<MODULE>_API` come from the build. | `VX_ASSERT`, `VX_CLASS` |
-| Names the language or the standard library requires (agreed in M1, 2026-10-10) | Keep the required spelling. Everything else follows the rows above. | `value_type`, `push_back()`, `begin()`/`end()` |
+| Names the language or the standard library requires (agreed in M1, 2026-10-10) | Keep the required spelling. Everything else follows the rows above. A container pairs `begin()`/`end()` with PascalCase `Begin()`/`End()` that return the same thing (Fares, agreed in M1.8, 2026-10-11). | `value_type`, `push_back()`, `begin()`/`end()` beside `Begin()`/`End()` |
 | Files | Named after the main type, without its prefix | `TArray` → `Array.h` |
 | Backend `.cpp` files | The backend's name, then the name of the header they implement | `Platform/Raylib/RaylibPlatformInit.cpp` implements `Platform/PlatformInit.h` |
 
@@ -168,9 +172,12 @@ Why:
 - Macros are expanded by the preprocessor before namespaces exist, so a prefix is their only protection.
 - A global that any file can change is hard to trace when it goes wrong. Behind a function, there's one door, which is the place to add validation or thread safety later. UE marks its globals with `G` (`GLog`) because they're `extern` and visible everywhere; Vertex's never leave their file, so they need no marker. `constinit` guarantees the variable is set before any code runs, so it's safe even from other files' startup code.
 - The standard library and the language look some names up by their exact spelling: `std::back_inserter` calls `push_back` and reads `value_type`, and a range-for loop calls `begin()` and `end()`. Renaming them to PascalCase breaks the code that uses them. UE's `TArray` keeps lowercase `begin()`/`end()` for the same reason.
+- `Begin()`/`End()` sit beside the lowercase pair so that an explicit call reads like the rest of Vertex, while range-for still finds the spelling it needs (Fares, M1.8). The cost is two names for each function, which every container repeats. UE has only the lowercase pair, and names explicit iteration differently: `TArray::CreateIterator()`.
+- A value template parameter is a compile-time constant, so it's spelled like one. The `T` prefix stays for type parameters, so `template <typename TElement, int32 ArrayNum>` shows which is which.
 - A method parameter with the same name as a member hides it ("shadowing"), which is warning C4458. At `/W4` with warnings as errors, that fails the build. Hence the `In` rule.
 - The `Find`/`Get` split tells a caller from the name alone whether the result needs a null check. UE's containers follow it: `TLruCache::Find` returns `nullptr` for a missing key, while `FindChecked` asserts.
 - A pointer type (`TUniquePtr` now, `TObjectPtr` and weak pointers later) keeps the `Get()` that std and UE give it, returning a pointer that may be null (Fares, M1.2). Holding something that may be null is that type's whole job, and anyone who has used `std::unique_ptr` or UE's `TUniquePtr` reads `Get()` that way.
+- A container's or view's `GetData()` may return `nullptr` because an empty one has no elements to point at (M1.8). A caller checks `Num()` before reading through it, not the pointer. The exception covers `GetData()` only: a blanket one for containers would lose the `Find`/`Get` split on lookups, such as `TMap::Find`, where it matters most.
 - A backend `.cpp` repeats its folder's name so that basenames stay unique. MSBuild compiles every file in a project into one object folder, so a `Raylib/PlatformInit.cpp` and a `Null/PlatformInit.cpp` would both produce `PlatformInit.obj`. UE does the same with `Windows/WindowsPlatformMisc.cpp`.
 - A `constexpr` variable at namespace scope is also `const`, which gives every file that includes its header a private copy. When an inline function binds a reference to one (`std::format` takes its arguments by reference), each file's copy of that function points at a different object, which breaks the one-definition rule without a diagnostic. `inline` makes it one object for the whole program.
 
@@ -184,9 +191,15 @@ The exceptions are where something outside Vertex requires exactly that type:
 - `char` holds text, not a number. Character types are decided in M1.9.
 - A `std` type with no alias, such as `std::ptrdiff_t`, keeps its `std` name.
 
+Sizes and indices (agreed in M1.8, 2026-10-11):
+- Containers and views count and index with `int32`.
+- "Not found" is `Vertex::IndexNone`, an `inline constexpr int32` equal to -1 in `NumericTypes.h`. It's "nullptr for integers": any `Find` that returns an index can return it, without including a container's header.
+- A `usize` from std (`size()`, `sizeof`) is cast to `int32` once, where it enters a container, behind an assert that it fits. A view's constructor from a std container does that cast, so its callers never write it.
+
 Traps:
 - **Never overload on both `uint64` and `usize`, or both `int64` and `intptr`.** They're the same type on Windows, so the second overload is a redefinition there, and they're different types on macOS.
 - **`int32 < usize` compiles at `/W4` without a warning.** The `int32` is converted to unsigned, so a negative value compares as a huge one.
+- **A range check that adds two `int32`s can overflow.** `Index + Length <= Count` wraps negative for a huge `Length` and passes. Test `Index <= Count` first, then `Length <= Count - Index`, as `TArrayView::Slice` does.
 - **`float32` is `float`, not C++23's `std::float32_t`.** That one is a distinct type, so repointing the alias would change every overload and raylib call that takes `float`. CoreTests pins `float32` to `float` and `float64` to `double`.
 
 Why:
@@ -195,6 +208,8 @@ Why:
 - An alias is the same type under a second name, not a new type. Passing `float32` to raylib's `float`, or storing `.size()` in a `usize`, needs no conversion.
 - They're global and lowercase, like the built-in types they stand for, because they appear on nearly every line. A library that declares the same name as a different type fails loudly with C2371.
 - The limits come from `<cstdint>`'s `INT32_MAX` family, not `std::numeric_limits<…>::max()`: `<windows.h>` defines `max` as a macro, which breaks that call in any header included after it.
+- Sizes and indices are signed because MSVC at `/W4` catches lost bits (C4267, C4244) but not a changed sign: `int32 < usize`, `usize X = SomeInt32`, and `for (usize I = N - 1; I >= 0; --I)` all compile silently. With a signed count, `Num() - 1` on an empty container is -1, not a huge number, and an assert can see a negative index. UE uses `int32` for the same reasons (`Containers/ArrayView.h:144`). A narrower count saves nothing: a pointer's alignment pads a view to 16 bytes either way.
+- `IndexNone` is a constant, not UE's anonymous `enum { INDEX_NONE = -1 }`. The enum breaks `auto` (C2440), `std::format` (C2338), and `std::max` (C2672), and its UPPER_SNAKE name reads like a macro.
 
 ### File layout
 

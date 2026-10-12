@@ -148,6 +148,92 @@ for File in "${Files[@]}"; do
 			}
 		}
 
+		# CLAUDE.md "Code style": an if, for, while, or switch has a blank line before and
+		# after it, unless it opens or closes a block, and only a one-line if that returns
+		# skips its braces. It runs once the whole file is read, because a statement ends at
+		# a closing brace further down. Lines that continue a macro are skipped, and so is
+		# the while that ends a do-while.
+		function CheckControlStatements(    I, J, Line, Prev, Next, Keyword, End, BraceDepth, Text)
+		{
+			for (I = 1; I <= NR; I++)
+			{
+				Line = SrcTrim[I]
+				if (SrcRaw[I] ~ /\\[ \t]*$/ || Line !~ /^(if|for|while|switch)[ \t]*(constexpr[ \t]*)?\(/)
+				{
+					continue
+				}
+				if (I > 1 && SrcTrim[I - 1] ~ /^\}$/ && Line ~ /^while[ \t]*\(.*\);$/)
+				{
+					continue
+				}
+				Keyword = Line
+				sub(/[ \t(].*$/, "", Keyword)
+				Prev = (I > 1) ? SrcTrim[I - 1] : ""
+				if (Prev != "" && Prev !~ /\{$/ && Prev !~ /^(case[ \t].*|default[ \t]*):$/ && Prev !~ /^#/)
+				{
+					Hit("Spacing: a blank line before an if, for, while, or switch, unless it opens a block", I, SrcRaw[I])
+				}
+				End = I
+				if (Line ~ /;$/)
+				{
+					if (Keyword != "if" || Line !~ /\)[ \t]*return([^A-Za-z0-9_].*)?;$/)
+					{
+						Hit("Braces: only a one-line if that returns may skip its braces", I, SrcRaw[I])
+					}
+				}
+				else
+				{
+					J = I + 1
+					while (J <= NR && SrcTrim[J] != "{" && SrcTrim[J] !~ /;$/)
+					{
+						J++
+					}
+					if (J <= NR && SrcTrim[J] != "{")
+					{
+						Hit("Braces: only a one-line if that returns may skip its braces", I, SrcRaw[I])
+						End = J
+					}
+					else
+					{
+						while (1)
+						{
+							BraceDepth = 0
+							for (; J <= NR; J++)
+							{
+								Text = SrcTrim[J]
+								BraceDepth += gsub(/\{/, "{", Text)
+								BraceDepth -= gsub(/\}/, "}", Text)
+								if (BraceDepth == 0)
+								{
+									break
+								}
+							}
+							End = J
+							if (J + 1 > NR || SrcTrim[J + 1] !~ /^else([^A-Za-z0-9_]|$)/)
+							{
+								break
+							}
+							J++
+							if (SrcTrim[J] ~ /;$/)
+							{
+								End = J
+								break
+							}
+							while (J <= NR && SrcTrim[J] != "{")
+							{
+								J++
+							}
+						}
+					}
+				}
+				Next = (End < NR) ? SrcTrim[End + 1] : ""
+				if (Next != "" && Next !~ /^\}/ && Next !~ /^#/ && Next !~ /^(case[ \t].*|default[ \t]*):$/)
+				{
+					Hit("Spacing: a blank line after an if, for, while, or switch, unless it closes a block", End + 1, SrcRaw[End + 1])
+				}
+			}
+		}
+
 		# Class layout and function order (CLAUDE.md "Declaration order"). A heuristic: it
 		# follows braces to find class bodies, splits each body into declarations, and sorts
 		# each function into one of the 13 rows. A const function that returns neither bool
@@ -705,6 +791,7 @@ for File in "${Files[@]}"; do
 			IsLogBackend = (File ~ /\/Private\/Logging\//)
 			IsDescriptor = (File ~ /(\.Module\.lua|^Vertex\.lua)$/)
 			IsNumericTypes = (File ~ /(\/Core\/Types\/NumericTypes\.h|\/Types\/NumericTypesTests\.cpp)$/)
+			IsArrayView = (File ~ /\/Core\/Containers\/ArrayView\.h$/)
 			BlockComment = 0
 			FirstCode = ""
 			FirstInclude = ""
@@ -838,6 +925,8 @@ for File in "${Files[@]}"; do
 			Trimmed = Code
 			sub(/[ \t]+$/, "", Trimmed)
 			sub(/^[ \t]+/, "", Trimmed)
+			SrcTrim[N] = Trimmed
+			SrcRaw[N] = Raw
 
 			# Allman: an opening brace goes on its own line, in C++ and in Lua tables.
 			if (Trimmed ~ /.\{$/ && Trimmed !~ /^#/)
@@ -1073,6 +1162,12 @@ for File in "${Files[@]}"; do
 				{
 					Hit("Ownership: TUniquePtr and Vertex::MakeUnique, never std::unique_ptr or std::make_unique", N, Raw)
 				}
+				# CLAUDE.md "Code style": a read-only view is written TConstArrayView<T>. ArrayView.h
+				# declares that alias, so it is exempt.
+				if (!IsArrayView && Code ~ /(^|[^A-Za-z0-9_])TArrayView[ \t]*<[ \t]*const([^A-Za-z0-9_]|$)/)
+				{
+					Hit("Views: write TConstArrayView<T>, not TArrayView<const T>", N, Raw)
+				}
 				# A type declared with its body on the same line: "struct VFoo {};".
 				if (Trimmed ~ /^(class|struct|union|enum)[ \t][^;{]*\{./)
 				{
@@ -1121,6 +1216,7 @@ for File in "${Files[@]}"; do
 				{
 					Hit("raylib rule 3: raylib.h and windows.h in one translation unit", 1, "")
 				}
+				CheckControlStatements()
 			}
 			if (IsDescriptor && FirstCode !~ /^return([^A-Za-z0-9_]|$)/)
 			{
