@@ -1,6 +1,6 @@
 # M1.8: `TArrayView`
 
-**Status:** done 2026-10-11
+**Status:** done 2026-10-11, PR #22
 **Branch:** `feature/m1-array-view`
 **Roadmap:** M1, Core types
 
