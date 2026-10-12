@@ -107,9 +107,12 @@ Check every row of the table. The scan covers type, enum, template-parameter, ma
 - Free functions live in `namespace Vertex`. Internals a header must expose go in `Vertex::Private`. Helpers used by one `.cpp` go in an anonymous namespace, not `static`.
 - Constants are `constexpr` PascalCase, never `#define`. A constant a header shares is `inline constexpr`, inside `namespace Vertex`: without `inline`, every file gets its own copy.
 - Numeric types (CLAUDE.md § Numeric types): every integer and float uses an alias from `Core/Types/NumericTypes.h`. The scan flags built-in and `std` spellings. Drop the hits that are CLAUDE.md's exceptions: today, `printf`'s precision in `Log.cpp` and HeaderTool's `Run` exit code. Also flag an overload set that takes both `uint64` and `usize`, or both `int64` and `intptr`.
+- Sizes and indices (CLAUDE.md § Numeric types): containers and views count and index with `int32`, and "not found" is `Vertex::IndexNone`, never a bare `-1` or a max-value sentinel. A `usize` from std is cast to `int32` once, where it enters a container, behind an assert. Flag a range check that adds two `int32`s (`Index + Length <= Count`): it can overflow.
+- A value template parameter is PascalCase with no prefix (`template <int32 ArrayNum>`). The `T` prefix is for type parameters only.
+- A container pairs the lowercase `begin()`/`end()` that range-for requires with PascalCase `Begin()`/`End()`. Flag a container that has only one of the pairs.
 - A file is named after its main type, without the prefix (`TArray` → `Array.h`).
 - A class template gets `T`, a plain class gets `V`. The scan can't tell which one a class is.
-- Getters (the Getters row): `Get…` always succeeds, so a `Get` that can return `nullptr`, an empty `std::optional`, or a not-found index is really a `Find`. The one exception is a pointer type's `Get()` (`TUniquePtr::Get`), which returns its raw pointer or `nullptr`, as std and UE do. A `bool` getter never starts with `Get` or `Find`. No `TryGet…`.
+- Getters (the Getters row): `Get…` always succeeds, so a `Get` that can return `nullptr`, an empty `std::optional`, or a not-found index is really a `Find`. There are two exceptions: a pointer type's `Get()` (`TUniquePtr::Get`), which returns its raw pointer or `nullptr`, as std and UE do, and a container's or view's `GetData()` (`TArrayView::GetData`), which may be `nullptr` when it holds no elements. Every other getter on those types follows the rule. A `bool` getter never starts with `Get` or `Find`. No `TryGet…`.
 
 ### 5. File layout (CLAUDE.md § File layout, § Declaration order, § Source layout per module)
 - The copyright line comes first in every `.h`, `.cpp`, and `.inl`. Headers follow it with `#pragma once`.
@@ -135,6 +138,8 @@ Check every row of the table. The scan covers type, enum, template-parameter, ma
 
 ### 6. Formatting (CLAUDE.md § Code style, `.editorconfig`)
 - Allman braces everywhere, Lua tables included. Tabs for indentation. UTF-8 without BOM. No trailing whitespace. A final newline.
+- Only a one-line `if` whose statement is a `return` skips its braces. Every other `if`, `for`, `while`, and `switch` body is a braced block.
+- An `if`, `for`, `while`, or `switch` has a blank line before and after it, except where it opens or closes a block. An `else` chain and a `do` … `while` count as one statement. The scan reads statements line by line, so confirm each hit: a condition split across lines, or a brace inside a string, can mislead it.
 - The scan covers all of these. Confirm, then group repeats into one finding per file with the line list.
 
 ### 7. Warnings that fail the build (CLAUDE.md § Build system)
@@ -204,6 +209,7 @@ One to three specific strengths, and why each matters.
 - For every new piece of state: who owns it, who may change it, and who needs to see it?
 - Every resource (window, GPU handle, file) has an RAII owner. A heap object is owned by a `TUniquePtr` and created with `Vertex::MakeUnique`. No `std::unique_ptr`, no `std::make_unique` (the scan flags both), and no `new` whose result isn't handed straight to an owner. Raw pointers and references are non-owning.
 - A `std::string_view` or `std::span` is never stored past the call unless its owner outlives it. It's never assumed to be null-terminated: pass it to C APIs with a length, the way `Log.cpp` uses `%.*s`.
+- The same goes for a `TArrayView`. A function that only reads or edits a list takes one by value, written `TConstArrayView<T>` when it's read-only (CLAUDE.md § Code style; the scan flags `TArrayView<const`). Flag a view stored in a member or a global without a note on why its source outlives it, and a view made from a temporary that outlives its statement: `TConstArrayView<int32> View = MakeScores();` dangles at once.
 - **Static libraries and globals.** Globals with constructors in different translation units initialize in an unspecified order. And the linker drops object files from a static library when nothing references them, so self-registering globals (future reflection, module registries) can silently vanish. Flag either pattern.
 - Startup and shutdown order is explicit, and shutdown mirrors startup.
 

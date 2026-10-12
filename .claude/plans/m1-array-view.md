@@ -1,6 +1,6 @@
 # M1.8: `TArrayView`
 
-**Status:** approved 2026-10-11
+**Status:** done 2026-10-11
 **Branch:** `feature/m1-array-view`
 **Roadmap:** M1, Core types
 
@@ -134,17 +134,17 @@ The `Core/` and `Tests/` paths are under `Source/`. Create new files on disk, th
 
 Each card gets a full walkthrough when we reach it. `/implement-feature` ticks a card once it builds and passes review. Each card adds its own tests, and two end with a build that must fail, which is undone before moving on.
 
-- [ ] **Card 1: The view.** Create `ArrayView.h`: the class with its pointer and `int32` count, the default constructor, the pointer-and-count constructor with its two asserts, `Num()`, `IsEmpty()`, and `GetData()`. Create the test file with tests 1–3 and the size and trivially-copyable proofs.
+- [x] **Card 1: The view.** Create `ArrayView.h`: the class with its pointer and `int32` count, the default constructor, the pointer-and-count constructor with its two asserts, `Num()`, `IsEmpty()`, and `GetData()`. Create the test file with tests 1–3 and the size and trivially-copyable proofs.
   *Why here:* every later card reads through these.
-- [ ] **Card 2: Reading the elements.** `IsValidIndex()`, `[]` with its assert, and `begin()`/`end()`. Tests 4–7.
+- [x] **Card 2: Reading the elements.** `IsValidIndex()`, `[]` with its assert, and `begin()`/`end()`. Tests 4–7.
   *Why here:* every later card's tests read through `[]` and range-for.
-- [ ] **Card 3: Read-only views and the stride guard.** The `TConstArrayView` alias, and the constructor from another view, which can add `const`. The guard goes on that constructor and on the pointer-and-count one, which becomes a template so the guard can see the real type. Test 8 and the compile-time proofs. Then watch a view of a base type over a derived array fail to build (C2661).
+- [x] **Card 3: Read-only views and the stride guard.** The `TConstArrayView` alias, and the constructor from another view, which can add `const`. The guard goes on that constructor and on the pointer-and-count one, which becomes a template so the guard can see the real type. Test 8 and the compile-time proofs. Then watch a view of a base type over a derived array fail to build (C2661).
   *Why here:* the constructors in cards 4 and 5 rely on the same idea. It's also the one mistake a hand-written view makes silently.
-- [ ] **Card 4: C arrays and `MakeArrayView`.** The C-array constructor, which reads the count from the array's type. Then `MakeArrayView` for a pointer and a count, and for a C array. Tests 9 and 10.
+- [x] **Card 4: C arrays and `MakeArrayView`.** The C-array constructor, which reads the count from the array's type. Then `MakeArrayView` for a pointer and a count, and for a C array. Tests 9 and 10.
   *Why here:* `MakeArrayView` exists mainly for the pointer case. Since card 3, that constructor is a template, and a template constructor's parameter can't tell the compiler the view's element type.
-- [ ] **Card 5: Containers Vertex doesn't own.** The generic constructor (it checks for `data()` and `size()`, applies the guard, and asserts the size fits), and the generic `MakeArrayView`. Tests 11 and 12, and the proofs of what it rejects.
+- [x] **Card 5: Containers Vertex doesn't own.** The generic constructor (it checks for `data()` and `size()`, applies the guard, and asserts the size fits), and the generic `MakeArrayView`. Tests 11, 12, and 17, and the proofs of what it rejects.
   *Why here:* it's the most template-heavy piece, and it builds on card 3's guard and card 4's `MakeArrayView`.
-- [ ] **Card 6: Slicing and searching.** `Slice()`, `Find()`, and `Contains()`. `Vertex::IndexNone` goes in `NumericTypes.h`, with its proof in `NumericTypesTests.cpp`. Tests 13–16. Then watch an ignored `Slice` fail to build (C4834).
+- [x] **Card 6: Slicing and searching.** `Slice()`, `Find()`, and `Contains()`. `Vertex::IndexNone` goes in `NumericTypes.h`, with its proof in `NumericTypesTests.cpp`. Tests 13–16. Then watch an ignored `Slice` fail to build (C4834).
   *Why here:* they only use what the earlier cards built.
 
 ## Tests
@@ -166,8 +166,9 @@ In all three configurations, they prove:
 14. `TArrayView`: `Slice` asserts on a range outside the view. Debug and Development only.
 15. `TArrayView`: `Find` returns the first matching index, or `IndexNone`.
 16. `TArrayView`: `Contains` reports whether a value is in the view.
+17. `TArrayView`: asserts when a container is too big for an `int32`. Debug and Development only (added during card 5).
 
-Tests 3, 5, and 14 are compiled out of Shipping. It has no asserts, and an out-of-range read there is undefined behavior.
+Tests 3, 5, 14, and 17 are compiled out of Shipping. It has no asserts, and an out-of-range read there is undefined behavior.
 
 And at compile time (`static_assert`, CLAUDE.md § Tests):
 - It's 16 bytes and trivially copyable.
@@ -181,7 +182,7 @@ And at compile time (`static_assert`, CLAUDE.md § Tests):
 ## How we know it works
 
 - The whole solution builds with zero warnings in Debug, Development, and Shipping.
-- `VertexCoreTests.exe` passes 42/42 in Debug and Development (the 26 existing tests and these 16), and 38/38 in Shipping, which compiles out tests 3, 5, and 14.
+- `VertexCoreTests.exe` passes 43/43 in Debug and Development (the 26 existing tests and these 17), and 38/38 in Shipping, which compiles out tests 3, 5, 14, and 17.
 - Each must-fail build fails with the expected error, then is undone: C2661 for a base view over a derived array (card 3), and C4834 for an ignored `Slice` (card 6).
 
 Before writing this plan, Claude prototyped the whole class in the scratchpad against Vertex's real `Assert.h`, in Debug and Shipping settings. It checked:
@@ -196,11 +197,31 @@ Before writing this plan, Claude prototyped the whole class in the scratchpad ag
    - CLAUDE.md § C++ naming, Getters row: the exception also covers a container's or view's `GetData()`, which returns `nullptr` when it holds no elements. Every other getter on them follows `Get`/`Find`.
    - CLAUDE.md § Numeric types: containers and views count and index with `int32`, and "not found" is `Vertex::IndexNone`, an `inline constexpr int32` in `NumericTypes.h`, not UE's anonymous enum. A `usize` from std is cast once, where it enters. For views, the generic constructor does that cast. The why is the sign table from fork 1, and the three enum errors.
    - CLAUDE.md § Code style: a read-only view is written `TConstArrayView<T>`. A function that only reads a list takes one by value.
-   - `/review` (`.claude/skills/review/SKILL.md`): the same three rules.
+   - CLAUDE.md § C++ naming: a container offers `Begin()` and `End()` alongside the lowercase `begin()` and `end()` that range-for requires (Fares, card 2).
+   - CLAUDE.md § C++ naming: a value template parameter is PascalCase with no prefix, like a constant: `template <int32 ArrayNum>` (card 4). The `T` prefix stays for type parameters.
+   - `/review` (`.claude/skills/review/SKILL.md`): the same four rules.
    - StyleScan: flag `TArrayView<const` outside `ArrayView.h`.
-   - Roadmap, M1.3's notes: `TArray` adds its implicit conversion to a view and its `MakeArrayView` overload in `Array.h`, and its sizes are `int32`. It can reuse the stride guard, which may raise the concept-naming fork.
+   - Roadmap, M1.3's notes: `TArray` adds its implicit conversion to a view and its `MakeArrayView` overload in `Array.h`, its sizes are `int32`, and it offers `Begin()`/`End()` beside `begin()`/`end()`. It can reuse the stride guard, which may raise the concept-naming fork.
 2. **Review:** `/review`, until "Review passed".
 3. **Ship:** `/ship-feature`, when Fares says so.
+
+## Added during implementation (2026-10-11)
+
+- **Card 1:** Fares named the members `Data` and `Count`, and the pointer-and-count constructor's parameters `InData` and `InCount`.
+- **Card 2, `Begin()` and `End()` (Fares).** The view offers PascalCase `Begin()` and `End()` beside the lowercase `begin()` and `end()` that range-for requires, so explicit calls read like the rest of Vertex. Claude raised the cost: two names for each function, which every later container repeats. UE has only the lowercase pair, plus `CreateIterator()` (`Array.h:3355`). Fares kept them, and the range-for test checks both. The docs step records the pair as a container convention.
+- **Card 3:** Fares' first build kept the pointer-and-count constructor's parameter as `TElement*`, so `TOtherElement` couldn't be deduced and the constructor accepted nothing (C2661, with "could not deduce template argument"). He fixed it from the diagnostic's notes, as in M1.2's card 5.
+- **Card 4, naming:** the naming table had no row for a value template parameter. `ArrayNum` follows the Constants row: PascalCase, no prefix. The docs step adds the row.
+- **Card 5, test 17 (Claude):** the generic constructor's size assert had no test. A fake container whose `size()` reports one more than `Vertex::MaxInt32` proves it fires. It's an assert test, so Shipping compiles it out: 43 tests in Debug and Development, 38 in Shipping.
+- **Card 5, constructor order:** StyleScan reads the converting constructor (`const TArrayView<TOtherElement>&`) as a copy constructor, the way `TUniquePtr`'s converting move sits with the moves. So the generic constructor goes above it: your own parameter lists, then copy, then move (CLAUDE.md § Declaration order). Card 5's walkthrough put it below by mistake, and card 6 moves it.
+
+## Added during review (2026-10-11)
+
+- **Fixed from the first pass:** `Find`'s loop index became an `int32`; two `static_assert`s in the tests spell `TConstArrayView<int32>`; and the two default-constructed views in the tests are `const`, not `constexpr`, because the view makes no `constexpr` promise.
+- **Braces and blank lines (Fares).** The first pass asked whether a one-statement `if` needs braces. Fares set two rules, now in CLAUDE.md § Code style and checked by StyleScan:
+  - an `if` skips its braces only when its one statement is a `return` and the whole `if` fits on one line, as in `Find`;
+  - an `if`, `for`, `while`, or `switch` has a blank line before and after it, except where it opens or closes a block.
+  - Fares said "function"; the rule reads "block", because `Find`'s one-line `if` is the only statement in its loop's body. A scan of the whole codebase found no other code that breaks either rule.
+- **INFO Fares skipped:** `ArrayView.h:235` spells the C-array parameter `TElement(&Array)`, and the declaration `TElement (&Array)`. They compile the same.
 
 ## Later (not in this feature)
 

@@ -2,7 +2,8 @@
 
 /**
  * The numeric vocabulary for all of Vertex: one alias per width, used instead of int, long, float, and std::size_t,
- * plus the integer limits that go with them. The aliases are global and lowercase, like the built-in types they stand for.
+ * plus the integer limits that go with them, and IndexNone, the int32 that means "no index". The aliases are global and lowercase,
+ * like the built-in types they stand for.
  */
 
 #pragma once
@@ -75,4 +76,10 @@ namespace Vertex
 
 	/** The largest uint64, 18446744073709551615. */
 	inline constexpr uint64 MaxUInt64 = UINT64_MAX;
+
+	/**
+	 * The index that means "no index", as nullptr means "no object": a Find returns it when nothing matches.
+	 * It's -1, which no element can have: Vertex's containers count and index from 0, with an int32.
+	 */
+	inline constexpr int32 IndexNone = -1;
 }
